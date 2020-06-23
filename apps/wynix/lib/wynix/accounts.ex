@@ -206,6 +206,26 @@ defmodule Wynix.Accounts do
   end
 
   @doc """
+  Updates a account's location.
+
+  ## Examples
+
+      iex> update_account_location(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_location(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_location(%Account{} = account, attrs) do
+    account
+    |> Account.add_location_changeset(attrs)
+    |> Repo.update()
+  end
+
+
+
+  @doc """
   Deletes a account.
 
   ## Examples

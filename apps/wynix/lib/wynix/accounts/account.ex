@@ -14,6 +14,8 @@ defmodule Wynix.Accounts.Account do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "accounts" do
+    # full name of the name
+    field :owner_name, :string
     # mpesa phone number
     field :mpesa_number, :string
     # paypal account
@@ -22,8 +24,10 @@ defmodule Wynix.Accounts.Account do
     field :payoneer, :string
     # email addresses
     field :emails, {:array, :string}
+    field :email, :string, virtual: true
     # phone number
     field :phones, {:array, :string}
+    field :phone, :string, virtual: true
     # banking information
     embeds_one :banking, Banking do
       field :bank_name, :string
@@ -51,7 +55,8 @@ defmodule Wynix.Accounts.Account do
       :paypal,
       :payoneer,
       :emails,
-      :phones
+      :phones,
+      :full_name
     ])
     # cast the banking
     |> cast_embed(:banking, with: &banking_changeset/2)
@@ -77,7 +82,7 @@ defmodule Wynix.Accounts.Account do
   end # end of the banking changeset
 
   @doc false
-  def location_changeset(location, atts) do
+  def location_changeset(location, attrs) do
     location
     # cast the fields
     |> cast(attrs, [
@@ -179,6 +184,7 @@ defmodule Wynix.Accounts.Account do
     |> add_to_phone_list()
   end # end of add_email_changeset/2
 
+
   # Validate not already added checks to ensure that the email being added is not already
   # in the list of emails.
   defp validate_email_not_repeated(%Ecto.Changeset{valid?: true, changes: %{email: email}, data: %__MODULE__{emails: emails}} = changeset) do
@@ -206,7 +212,7 @@ defmodule Wynix.Accounts.Account do
   defp validate_phone_not_repeated(changeset), do: changeset
 
   # validate phone format checks to ensure the phone number is valid for the country in which it is entered
-  defp validate_phone_format(%Ecto.Changeset{valid?: true, changes: %{mpesa_number: number}, data: %__MODULE__{location: %__MODULE__.Location{county: country}}} = changeset) do
+  defp validate_phone_format(%Ecto.Changeset{valid?: true, changes: %{mpesa_number: number}, data: %__MODULE__{location: %__MODULE__.Location{country: country}}} = changeset) do
     # check to ensure the country is in mpesa_countries
     if country in @mpesa_countries do
       # validate the number for the country given by the user
@@ -228,14 +234,14 @@ defmodule Wynix.Accounts.Account do
   defp validate_phone_format(changeset), do: changeset
 
   # add to phone list
-  defp add_to_phone_list(%Ecto.Changeset{valid?: true, changes: %{phone: phone}, data: %__MODULE__{phones: phones}}) do
+  defp add_to_phone_list(%Ecto.Changeset{valid?: true, changes: %{phone: phone}, data: %__MODULE__{phones: phones}} = changeset) do
     # add the list of current list of emails
     changeset |> put_change(:phones, [phone | phones])
   end # end of add to phone list when the changeset is valid
   defp add_to_phone_list(changeset), do: changeset
 
   # add to emailemail
-  defp add_to_email_list(%Ecto.Changeset{valid?: true, changes: %{email: email}, data: %__MODULE__{emails: emails}}) do
+  defp add_to_email_list(%Ecto.Changeset{valid?: true, changes: %{email: email}, data: %__MODULE__{emails: emails}} = changeset) do
     # add the list of current list of emails
     changeset |> put_change(:emails, [email | emails])
   end # end of add to phone list when the changeset is valid

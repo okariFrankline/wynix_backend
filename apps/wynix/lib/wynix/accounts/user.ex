@@ -3,6 +3,7 @@ defmodule Wynix.Accounts.User do
   import Ecto.Changeset
 
   alias Wynix.Utils.Validations
+  alias Wynix.Accounts.Account
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -18,6 +19,9 @@ defmodule Wynix.Accounts.User do
     field :current_password, :string, virtual: true
     field :token, :string
     field :username, :string
+
+    # relationships
+    has_one :account, Account
 
     timestamps()
   end

@@ -23,4 +23,20 @@ defmodule Wynix.Utils.Validations do
   end # end of of the validate_email formati if the changeset os valid
   def validate_email_format(changeset), do: changeset
 
+  @doc false
+  def validate_phone_format(phone_number, country) do
+    # craete the phone number using ExPhoneNUmber
+    {:ok, phone_number} = ExPhoneNumber.parse(phone_number, country)
+    # check if the phone number is valid
+    if ExPhoneNumber.is_valid_number?(phone_number) do
+      # internationalize the number and put it in the changese
+      phone_number = ExPhoneNumber.format(phone_number, :international)
+      # return an okay tuple with the international number
+      {:ok, phone_number}
+    else # the phone number is invalid
+      # add an error message
+      {:error, :not_valid}
+    end # end of checking the validity of the phone number
+  end # end of validate phone number/2
+
 end # end of the validations module

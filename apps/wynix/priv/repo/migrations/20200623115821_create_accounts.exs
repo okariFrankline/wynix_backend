@@ -24,9 +24,9 @@ defmodule Wynix.Repo.Migrations.CreateAccounts do
     create unique_index(:accounts, [:mpesa_number])
     create unique_index(:accounts, [:payoneer])
     create unique_index(:accounts, [:paypal])
-
+    create index(:accounts, [:user_id])
     # index on the full name
-    create index(:Accounts, [:full_name])
+    create index(:accounts, [:full_name])
 
   end
 

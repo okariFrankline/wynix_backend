@@ -16,12 +16,15 @@ defmodule Wynix.Repo.Migrations.CreatePractises do
       add :operate_outside_base_location :boolean, default: false
       add :professional_level, :string, null: true, default: "Amateur"
 
+      add :account_id, references(:accounts, on_delete: :delete_all, type: :binary_id)
+
       timestamps()
     end
 
     create index(:practises, [:full_name])
     create unique_index(:practises, [:practise_code])
     create index(:practises, [:practise_type])
+    create index(:practises, [:account_id])
   end
 
 end # end of the module definition

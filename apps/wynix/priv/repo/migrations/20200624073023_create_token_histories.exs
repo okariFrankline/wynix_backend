@@ -7,7 +7,7 @@ defmodule Wynix.Repo.Migrations.CreateTokenHistories do
       add :token_type, :string
       add :order_code, :string
       add :token_code, :string
-      add :account_id, references(:accounts, on_delete: :delete_all)
+      add :account_id, references(:accounts, on_delete: :delete_all, type: :binary_id)
 
       timestamps()
     end
@@ -18,6 +18,8 @@ defmodule Wynix.Repo.Migrations.CreateTokenHistories do
     create uniqe_index(:token_histories, [:token_code])
     # index on the inserted at
     create index(:token_histories, [:inserted_at])
+    # index for the account id
+    create index(:account_id, [:account_id])
 
   end
 

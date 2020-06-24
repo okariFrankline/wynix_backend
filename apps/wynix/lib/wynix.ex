@@ -14,11 +14,15 @@ defmodule Wynix do
   def create_user(:practise, attrs) do
     with {:ok, user} <- Accounts.create_user(attrs) do
       # create an account for the user
-      {:ok, _account} = user |> Ecto.build_assoc(attrs) |> Accounts.create_account()
+      {:ok, account} = user |> Ecto.build_assoc(attrs) |> Accounts.create_account()
       # create the practise
-      {:ok, _pratise} = user |> Ecto.build_assoc(attrs) |>Skills.create_practise()
+      {:ok, practise} = account |> Ecto.build_assoc(attrs) |> Skills.create_practise()
       # preload the practise and the account
-      {:ok, Accounts.preload_user(:practise, user)}
+      {:ok, %{
+        user: user,
+        account: account,
+        practise: practise
+      }}
 
     else
       {:error, _changeset} = changeset ->
@@ -30,9 +34,12 @@ defmodule Wynix do
   def create_user(:client, attrs) do
     with {:ok, user} <- Accounts.create_user(attrs) do
       # create an account for the user
-      {:ok, _account} = user |> Ecto.build_assoc(attrs) |> Accounts.create_account()
+      {:ok, account} = user |> Ecto.build_assoc(attrs) |> Accounts.create_account()
       # preload the practise and the account
-      {:ok, Accounts.preload_user(:client, user)}
+      {:ok, %{
+        user: user,
+        account: account
+      }}
 
     else
       {:error, _changeset} = changeset ->

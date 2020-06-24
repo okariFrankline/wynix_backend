@@ -8,6 +8,19 @@ defmodule Wynix.Accounts do
 
   alias Wynix.Accounts.User
 
+  @doc false
+  def preload_user(:practise, %User{} = user) do
+    Repo.preload(user, [
+      :account,
+      :practise
+    ])
+  end # end preload_user/2 for a practise account_type
+
+  @doc false
+  def preload_user(:client, %User{} = user) do
+    Repo.preload(user, :client)
+  end # end of preload_user for a client account
+
   @doc """
   Returns the list of users.
 

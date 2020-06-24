@@ -210,16 +210,125 @@ defmodule Wynix.Accounts do
 
   ## Examples
 
-      iex> update_account_location(account, %{field: new_value})
+      iex> update_account_payoneer(account, %{field: new_value})
       {:ok, %Account{}}
 
-      iex> update_account_location(account, %{field: bad_value})
+      iex> update_account_payoneer(account, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_account_location(%Account{} = account, attrs) do
+  def update_account_payoneer(%Account{} = account, attrs) do
     account
-    |> Account.add_location_changeset(attrs)
+    |> Account.add_payoneer_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a account's bid tokens.
+
+  ## Examples
+
+      iex> update_account_bid_tokens(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_bid_tokens(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_bid_tokens(%Account{} = account, %{bid_tokens: bid_tokens} = attrs) when is_integer(bid_tokens) do
+    account
+    |> Ecto.Changeset.change(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a account's publish tokens.
+
+  ## Examples
+
+      iex> update_account_publish_tokens(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_publish_tokens(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_publish_tokens(%Account{} = account, %{publish_tokens: publish_tokens} = attrs) when is_integer(publish_tokens) do
+    account
+    |> Ecto.Changeset.change(attrs)
+    |> Repo.update()
+  end
+
+
+  @doc """
+  Updates a account's paypal.
+
+  ## Examples
+
+      iex> update_account_paypal(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_paypal(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_paypal(%Account{} = account, attrs) do
+    account
+    |> Account.add_paypal_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a account's mpesa.
+
+  ## Examples
+
+      iex> update_account_mpesa(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_mpesa(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_mpesa(%Account{} = account, attrs) do
+    account
+    |> Account.add_mpesa_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a account's email.
+
+  ## Examples
+
+      iex> update_account_email(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_email(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_email(%Account{} = account, attrs) do
+    account
+    |> Account.add_email_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a account's phone.
+
+  ## Examples
+
+      iex> update_account_phone(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_phone(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_phone(%Account{} = account, attrs) do
+    account
+    |> Account.add_phone_changeset(attrs)
     |> Repo.update()
   end
 
@@ -253,4 +362,71 @@ defmodule Wynix.Accounts do
   def change_account(%Account{} = account, attrs \\ %{}) do
     Account.changeset(account, attrs)
   end
+
+  alias Wynix.Accounts.TokenHistory
+
+  @doc """
+  Returns the list of token_histories.
+
+  ## Examples
+
+      iex> list_token_histories()
+      [%TokenHistory{}, ...]
+
+  """
+  def list_token_histories do
+    Repo.all(TokenHistory)
+  end
+
+  @doc """
+  Gets a single token_history.
+
+  Raises `Ecto.NoResultsError` if the Token history does not exist.
+
+  ## Examples
+
+      iex> get_token_history!(123)
+      %TokenHistory{}
+
+      iex> get_token_history!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_token_history!(id), do: Repo.get!(TokenHistory, id)
+
+  @doc """
+  Creates a token_history.
+
+  ## Examples
+
+      iex> create_token_history(%{field: value})
+      {:ok, %TokenHistory{}}
+
+      iex> create_token_history(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_token_history(attrs \\ %{}) do
+    %TokenHistory{}
+    |> TokenHistory.changeset(attrs)
+    |> Repo.insert()
+  end
+
+
+  @doc """
+  Deletes a token_history.
+
+  ## Examples
+
+      iex> delete_token_history(token_history)
+      {:ok, %TokenHistory{}}
+
+      iex> delete_token_history(token_history)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_token_history(%TokenHistory{} = token_history) do
+    Repo.delete(token_history)
+  end
+
 end

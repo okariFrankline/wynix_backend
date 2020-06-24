@@ -28,6 +28,10 @@ defmodule Wynix.Accounts.Account do
     # phone number
     field :phones, {:array, :string}
     field :phone, :string, virtual: true
+    # token field
+    field :bid_tokens, :integer, default: 10
+    # publish tokens
+    field :publish_tokens, :integer, default: 5
     # banking information
     embeds_one :banking, Banking do
       field :bank_name, :string
@@ -44,6 +48,8 @@ defmodule Wynix.Accounts.Account do
 
     # relationships
     belongs_to :user, User
+    has_many :token_histories, Wynix.Accounts.TokenHistory
+    
     timestamps()
   end # end of the schema definition
 
@@ -56,7 +62,9 @@ defmodule Wynix.Accounts.Account do
       :payoneer,
       :emails,
       :phones,
-      :full_name
+      :full_name,
+      :bid_tokens,
+      :publish_tokens
     ])
     # cast the banking
     |> cast_embed(:banking, with: &banking_changeset/2)

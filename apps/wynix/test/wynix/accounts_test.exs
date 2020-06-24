@@ -128,4 +128,65 @@ defmodule Wynix.AccountsTest do
       assert %Ecto.Changeset{} = Accounts.change_account(account)
     end
   end
+
+  describe "token_histories" do
+    alias Wynix.Accounts.TokenHistory
+
+    @valid_attrs %{order_code: "some order_code", token_type: "some token_type"}
+    @update_attrs %{order_code: "some updated order_code", token_type: "some updated token_type"}
+    @invalid_attrs %{order_code: nil, token_type: nil}
+
+    def token_history_fixture(attrs \\ %{}) do
+      {:ok, token_history} =
+        attrs
+        |> Enum.into(@valid_attrs)
+        |> Accounts.create_token_history()
+
+      token_history
+    end
+
+    test "list_token_histories/0 returns all token_histories" do
+      token_history = token_history_fixture()
+      assert Accounts.list_token_histories() == [token_history]
+    end
+
+    test "get_token_history!/1 returns the token_history with given id" do
+      token_history = token_history_fixture()
+      assert Accounts.get_token_history!(token_history.id) == token_history
+    end
+
+    test "create_token_history/1 with valid data creates a token_history" do
+      assert {:ok, %TokenHistory{} = token_history} = Accounts.create_token_history(@valid_attrs)
+      assert token_history.order_code == "some order_code"
+      assert token_history.token_type == "some token_type"
+    end
+
+    test "create_token_history/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Accounts.create_token_history(@invalid_attrs)
+    end
+
+    test "update_token_history/2 with valid data updates the token_history" do
+      token_history = token_history_fixture()
+      assert {:ok, %TokenHistory{} = token_history} = Accounts.update_token_history(token_history, @update_attrs)
+      assert token_history.order_code == "some updated order_code"
+      assert token_history.token_type == "some updated token_type"
+    end
+
+    test "update_token_history/2 with invalid data returns error changeset" do
+      token_history = token_history_fixture()
+      assert {:error, %Ecto.Changeset{}} = Accounts.update_token_history(token_history, @invalid_attrs)
+      assert token_history == Accounts.get_token_history!(token_history.id)
+    end
+
+    test "delete_token_history/1 deletes the token_history" do
+      token_history = token_history_fixture()
+      assert {:ok, %TokenHistory{}} = Accounts.delete_token_history(token_history)
+      assert_raise Ecto.NoResultsError, fn -> Accounts.get_token_history!(token_history.id) end
+    end
+
+    test "change_token_history/1 returns a token_history changeset" do
+      token_history = token_history_fixture()
+      assert %Ecto.Changeset{} = Accounts.change_token_history(token_history)
+    end
+  end
 end

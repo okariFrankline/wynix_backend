@@ -12,6 +12,8 @@ defmodule Wynix.Repo.Migrations.CreateAccounts do
       add :mpesa_number, :string, null: true
       add :payoneer, :string, null: true
       add :paypal, :string, null: true
+      add :bid_tokens, :integer, default: 10
+      add :publish_tokens, :integer, default: 5
 
       add :user_id, references(:users, on_delete: :delete_all, type: :binary_id)
 

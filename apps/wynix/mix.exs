@@ -41,7 +41,8 @@ defmodule Wynix.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:jason, "~> 1.0"},
       {:argon2_elixir, "~> 2.3"},
-      {:ex_phone_number, "~> 0.2.0"}
+      {:ex_phone_number, "~> 0.2.0"},
+      {:puid, "~> 1.1"}
     ]
   end
 

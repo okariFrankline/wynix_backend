@@ -83,4 +83,69 @@ defmodule Wynix.ContractsTest do
       assert %Ecto.Changeset{} = Contracts.change_order(order)
     end
   end
+
+  describe "bids" do
+    alias Wynix.Contracts.Bid
+
+    @valid_attrs %{asking_amount: 120.5, deposit_amount: 120.5, owner_name: "some owner_name", status: "some status"}
+    @update_attrs %{asking_amount: 456.7, deposit_amount: 456.7, owner_name: "some updated owner_name", status: "some updated status"}
+    @invalid_attrs %{asking_amount: nil, deposit_amount: nil, owner_name: nil, status: nil}
+
+    def bid_fixture(attrs \\ %{}) do
+      {:ok, bid} =
+        attrs
+        |> Enum.into(@valid_attrs)
+        |> Contracts.create_bid()
+
+      bid
+    end
+
+    test "list_bids/0 returns all bids" do
+      bid = bid_fixture()
+      assert Contracts.list_bids() == [bid]
+    end
+
+    test "get_bid!/1 returns the bid with given id" do
+      bid = bid_fixture()
+      assert Contracts.get_bid!(bid.id) == bid
+    end
+
+    test "create_bid/1 with valid data creates a bid" do
+      assert {:ok, %Bid{} = bid} = Contracts.create_bid(@valid_attrs)
+      assert bid.asking_amount == 120.5
+      assert bid.deposit_amount == 120.5
+      assert bid.owner_name == "some owner_name"
+      assert bid.status == "some status"
+    end
+
+    test "create_bid/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Contracts.create_bid(@invalid_attrs)
+    end
+
+    test "update_bid/2 with valid data updates the bid" do
+      bid = bid_fixture()
+      assert {:ok, %Bid{} = bid} = Contracts.update_bid(bid, @update_attrs)
+      assert bid.asking_amount == 456.7
+      assert bid.deposit_amount == 456.7
+      assert bid.owner_name == "some updated owner_name"
+      assert bid.status == "some updated status"
+    end
+
+    test "update_bid/2 with invalid data returns error changeset" do
+      bid = bid_fixture()
+      assert {:error, %Ecto.Changeset{}} = Contracts.update_bid(bid, @invalid_attrs)
+      assert bid == Contracts.get_bid!(bid.id)
+    end
+
+    test "delete_bid/1 deletes the bid" do
+      bid = bid_fixture()
+      assert {:ok, %Bid{}} = Contracts.delete_bid(bid)
+      assert_raise Ecto.NoResultsError, fn -> Contracts.get_bid!(bid.id) end
+    end
+
+    test "change_bid/1 returns a bid changeset" do
+      bid = bid_fixture()
+      assert %Ecto.Changeset{} = Contracts.change_bid(bid)
+    end
+  end
 end

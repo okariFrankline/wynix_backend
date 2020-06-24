@@ -22,6 +22,10 @@ defmodule Wynix.Contracts.Order do
     field :status, :string, default: "Unpublished"
     # owner
     belongs_to :account, Wynix.Contracts.Order
+    # assignee
+    belongs_to :practise, Wynix.Contracts.Order
+    # bids
+    has_many :bids, Wynix.Contracts.Bid
 
     timestamps()
   end

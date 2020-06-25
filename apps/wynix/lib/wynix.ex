@@ -6,7 +6,9 @@ defmodule Wynix do
   Contexts are also responsible for managing your data, regardless
   if it comes from the database, an external API or others.
   """
-  alias Wynix.{Accounts, Skills, Contracts}
+  alias Wynix.{Accounts, Skills, Contracts, Repo}
+  alias Wynix.Contracts.{Bid, Order, Practise}
+  import Ecto.Query
 
   @doc """
     Create user creates a user together with his/her account and practise depending on the account type
@@ -108,6 +110,97 @@ defmodule Wynix do
     :ok
   end # end of create_bid/3
 
+  @doc """
+  Rject bid rejects the bid for a given order
+  """
+  def reject_bid(%Contracts.Bid{} = bid) do
+    # start a supervised process for rejecting a bid
+    Supervisor.start_link([
+      {Task, fn ->
+        Contracts.update_bid(bid, %{status: "Rejected"})
+      end}
+    ], strategy: :one_for_one)
+    # return ok
+    :ok
+  end # end of reject_bid/1
 
+  @doc """"
+    Accept a bid accepts a given bid, rejects the other bids for which this order was for and then assigns
+    the owner of the the bid as the new assignee of the job
+  """
+  def accept_bid(bid_id) when is_binary(bid_id) do
+    # get the order
+    bid = Contracts.get_order!(bid_id) |> Repo.preload([
+      # load only the id of the practise
+      practise: from(practise in Practise, select: [practise.id]),
+      # load on the contractors needed and the id
+      order: from(order in Order, select: [order.contractors_needed, order.id])
+    ])
+
+    # assign the contract
+    with {:ok, _order} = result <- assign_contract(practise, order) do
+      # start a process that accepts the given bid
+      Supervisor.start_link([
+        {Task, fn ->
+          Contracts.update_bid(bid, %{status: "Accepted"})
+          # send a notification to the owner of the bid
+        end}
+      ])
+      # return the result
+      result
+    end # end of with for assigning the contract
+  end # end of the accept_bid function/3
+
+
+  defp assign_order(%Practise{} = practise, %Order{contractors_needed: number} = order) when number - 1 == 0 do
+    # start a supervised process for rejecting each of the bids
+    Supervisor.start_link([
+      {Task, fn ->
+        # preload all the bids
+        bids = order |> Repo.preload([
+          bids: from(
+            bid in Bid,
+            where: bid.id != ^bid_id,
+            where: bid.status == "Pending"
+          )
+        ])
+        # for each of the bids, reject them
+        Stream.each(bids, fn bid ->
+          # for each of the bids in the list start a supervised process to reject the orders
+          Supervisor.start_link([
+            {Task, fn ->
+              Contracts.update_bid(bid, %{status: "Rejected."})
+              # send a notification to the owner of the bid
+            end} # end of the task for rejecting a given bid
+          ], strategy: :one_for_one)
+          |> Stream.run()
+        end) # end of the stream function
+      end} # end of the task for rejecting all the bids
+    ], strategy: :one_for_one)
+
+    # return the changeset
+    practise
+    # add the practise id and update the status and the number of contractors needed
+    |> Ecto.build_assoc(:orders, %{
+      status: "Assigned",
+      contractors_needed: 0
+    })
+    |> merge_and_update_order(order)
+  end # end of assign order
+
+  defp assign_order(%Practise{} = practise, %Order{contractors_needed: number} = order) do
+    practise
+    # add the build_assoc
+    |> Ecto.build_assoc(:orders, %{
+      contractors_needed: order.number - 1
+    })
+    |> merge_and_update_orders(order)
+  end # end of assign order
+
+  defp merge_and_update_orders(new_order, old_oder) do
+    old_order
+    |> Map.merge(new_order)
+    |> Repo.update()
+  end
 
 end # function for creating a user

@@ -7,13 +7,14 @@ defmodule Wynix.Accounts.Account do
   import Ecto.Changeset
 
   alias Wynix.Accounts.User
-  alias Wynix.Utils.Validations
+  alias Wynix.Utils.{Validations, Puid}
 
   @mpesa_countries ["Kenya", "Tanzania", "Uganda", "Rwanda", "South Sudan", "Mozambique", "Ghana", "Egypt"]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "accounts" do
+    field :account_code, :string
     # account type
     field :account_type, :string
     # is suspended
@@ -69,12 +70,20 @@ defmodule Wynix.Accounts.Account do
       :account_name,
       :bid_tokens,
       :publish_tokens,
-      :account_type
+      :account_type,
+      :account_code
     ])
     # cast the banking
     |> cast_embed(:banking, with: &banking_changeset/2)
     # cast the location
     |> cast_embed(:location, with: &location_changeset/2)
+  end
+
+  @doc false
+  def creation_changeser(account, attrs) do
+    changeset(account, attrs)
+    # add the account code
+    |> add_account_code()
   end
 
   @doc false
@@ -259,5 +268,8 @@ defmodule Wynix.Accounts.Account do
     changeset |> put_change(:emails, [email | emails])
   end # end of add to phone list when the changeset is valid
   defp add_to_email_list(changeset), do: changeset
+
+  defp add_account_code(%Ecto.Changeset{valid?: true} = changeset), do: changeset |> put_change(:account_code, Generator.generate())
+  defp add_account_code(changeset), do: changeset
 
 end # end of the Account's module

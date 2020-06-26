@@ -74,6 +74,60 @@ defmodule Wynix.Contracts do
   end
 
   @doc """
+  Updates a order's payment information.
+
+  ## Examples
+
+      iex> update_order_payment(order, %{field: new_value})
+      {:ok, %Order{}}
+
+      iex> update_order_payment(order, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_order_payment(%Order{} = order, attrs) do
+    order
+    |> Order.add_payment_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a order's bio.
+
+  ## Examples
+
+      iex> update_order_bio(order, %{field: new_value})
+      {:ok, %Order{}}
+
+      iex> update_order_bio(order, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_order_bio(%Order{} = order, attrs) do
+    order
+    |> Order.update_bio_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a order's service information.
+
+  ## Examples
+
+      iex> update_order_service(order, %{field: new_value})
+      {:ok, %Order{}}
+
+      iex> update_order_service(order, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_order_service(%Order{} = order, attrs) do
+    order
+    |> Order.add_service_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Deletes a order.
 
   ## Examples

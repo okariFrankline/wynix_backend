@@ -19,10 +19,12 @@ defmodule WynixWeb.Router do
     get "/", PageController, :index
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", WynixWeb do
-  #   pipe_through :api
-  # end
+  #Other scopes may use custom stacks.
+   scope "/api", WynixWeb do
+     pipe_through :api
+
+     resources "/users", UserController, except: [:new, :edit]
+   end
 
   # Enables LiveDashboard only for development
   #

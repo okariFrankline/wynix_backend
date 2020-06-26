@@ -14,8 +14,12 @@ defmodule Wynix.Accounts.Account do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "accounts" do
+    # account type
+    field :account_type, :string
+    # is suspended
+    field :is_suspended, :boolean, default: false
     # full name of the name
-    field :owner_name, :string
+    field :account_name, :string
     # mpesa phone number
     field :mpesa_number, :string
     # paypal account
@@ -49,7 +53,7 @@ defmodule Wynix.Accounts.Account do
     # relationships
     belongs_to :user, User
     has_many :token_histories, Wynix.Accounts.TokenHistory
-    
+
     timestamps()
   end # end of the schema definition
 
@@ -62,9 +66,10 @@ defmodule Wynix.Accounts.Account do
       :payoneer,
       :emails,
       :phones,
-      :full_name,
+      :account_name,
       :bid_tokens,
-      :publish_tokens
+      :publish_tokens,
+      :account_type
     ])
     # cast the banking
     |> cast_embed(:banking, with: &banking_changeset/2)

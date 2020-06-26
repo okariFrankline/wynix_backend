@@ -8,23 +8,44 @@ defmodule Wynix do
   """
   alias Wynix.{Accounts, Skills, Contracts, Repo}
   alias Wynix.Contracts.{Bid, Order, Practise}
+  alias Wynix.Accounts.{User, Account}
   import Ecto.Query
 
   @doc """
     Create user creates a user together with his/her account and practise depending on the account type
   """
-  def create_user(:practise, attrs) do
-    with {:ok, user} <- Accounts.create_user(attrs) do
+  def create_user(:practise, %{"password" => password, "account_type" => acc_type, "auth_email"=> email, "practise_type" => practise_type}) do
+    with {:ok, user} <- Accounts.create_user(%{"auth_email"=> email, "password" => password}) do
       # create an account for the user
-      {:ok, account} = user |> Ecto.build_assoc(attrs) |> Accounts.create_account()
-      # create the practise
-      {:ok, practise} = account |> Ecto.build_assoc(attrs) |> Skills.create_practise()
-      # preload the practise and the account
-      {:ok, %{
-        user: user,
-        account: account,
-        practise: practise
-      }}
+      account = user
+      # create an association with the user and add the required fields
+      |> Ecto.build_assoc(:account, %{
+        # set the account type
+        account_type: acc_type,
+        # set the account name, default to the username
+        account_name: user.username,
+        # set the auth email as one of the emails for the account
+        emails: [user.auth_email]
+      })
+      # create the account
+      |> Repo.insert!()
+      # preload the user
+      |> Repo.preload([
+        user: from(
+          user in User,
+          select: [user.id, user.token]
+        )
+      ])
+      # start a task to create the practise
+      Supervisor.start_link([
+        {Task, fn ->
+          # create the practise for the user
+          Skills.create_practise(%{account_id: account.id, practise_type: practise_type})
+        end}
+      ], strategy: :one_for_one)
+
+      # return the account
+      {:ok, account}
 
     else
       {:error, _changeset} = changeset ->
@@ -87,8 +108,15 @@ defmodule Wynix do
       :payment ->
         # update the order's payment
         Contracts.update_order_payment(order, order_attributes)
+      # updates the service
+      :service ->
+        # update the order's payment
+        Contracts.update_order_service(order, order_attributes)
+      # updates the bio
+      :bio ->
+        # update the order's payment
+        Contracts.update_order_bio(order, order_attributes)
 
-      # not payment update
       _ ->
         # update the order
         Contracts.update_order(order, order_attributes)
@@ -98,14 +126,24 @@ defmodule Wynix do
   @doc """
     Create bid creates a bid for a given order and for a given user
   """
-  def create_bid(%Skills.Practise{id: owner_id, practise_name: owner_name} = _owner, %Contracts.Order{id: order_id} = order, attrs) do
+  def create_bid(%Skills.Practise{id: owner_id, practise_name: owner_name} = _owner, order_id) do
     # start a supervised process to create the bid
     Supervisor.start_link([
       {Task, fn ->
-        # create a bid with added values for the attrs by adding the order_id, practise_id and the owner_name
-        Contracts.create_bid(%{attrs | practise_id: owner_id, owner_name: owner_name, order_id: order_id})
+        # get the order from the db
+        with %Order{} = order <- Contracts.get_order!(order_id) do
+          # check if the order has been cancelled
+          if order.status != "Cancelled" do
+            with {:ok, bid} <- Contracts.create_bid(%{practise_id: owner_id, owner_name: owner_name, order_id: order.id}) do
+              bid
+            end # end of creating the bid
+          end # end of checking if the order is cancelled
+        else
+          _ ->
+            :error
+        end # end of the with for getting the order
       end}
-    ])
+    ], strategy: :one_for_one)
     # return ok
     :ok
   end # end of create_bid/3
@@ -113,7 +151,7 @@ defmodule Wynix do
   @doc """
   Rject bid rejects the bid for a given order
   """
-  def reject_bid(%Contracts.Bid{} = bid) do
+  def reject_bid(bid_id) do
     # start a supervised process for rejecting a bid
     Supervisor.start_link([
       {Task, fn ->
@@ -128,9 +166,8 @@ defmodule Wynix do
     ], strategy: :one_for_one)
   end # end of reject_bid/1
 
-  @doc """"
-    Accept a bid accepts a given bid, rejects the other bids for which this order was for and then assigns
-    the owner of the the bid as the new assignee of the job
+  @doc """
+    Accepts a bid
   """
   def accept_bid(bid_id) when is_binary(bid_id) do
     # get the order
@@ -142,14 +179,15 @@ defmodule Wynix do
     ])
 
     # assign the contract
-    with {:ok, _order} = result <- assign_contract(practise, order) do
+    with {:ok, _order} = result <- assign_order(bid.practise, bid.order, bid.id) do
       # start a process that accepts the given bid
       Supervisor.start_link([
         {Task, fn ->
           Contracts.update_bid(bid, %{status: "Accepted"})
           # send a notification to the owner of the bid
+          send_bid_owner_notification(bid.practise_id, :accepted)
         end}
-      ])
+      ], strategy: :one_for_one)
       # return the result
       result
     end # end of with for assigning the contract
@@ -168,7 +206,7 @@ defmodule Wynix do
       # cancel the order
       with {:ok, _order} = result <- Ecto.Changeset.change(order, %{status: "Cancelled"}) |> Repo.update() do
         # start a process for rejecting all the bids made for this order
-        Supervisor.Start_link([
+        Supervisor.start_link([
           {Task, fn ->
             with bids when bids != [] <- order.bids do
               # for each of the bids, reject then
@@ -194,7 +232,7 @@ defmodule Wynix do
   end # end of cancel_order/1
 
 
-  defp assign_order(%Practise{} = practise, %Order{contractors_needed: number} = order) when number - 1 == 0 do
+  defp assign_order(%Practise{} = practise, %Order{contractors_needed: number} = order, bid_id) when number - 1 == 0 do
     # start a supervised process for rejecting each of the bids
     Supervisor.start_link([
       {Task, fn ->
@@ -227,10 +265,10 @@ defmodule Wynix do
       status: "Assigned",
       contractors_needed: 0
     })
-    |> merge_and_update_order(order)
+    |> merge_and_update_orders(order)
   end # end of assign order
 
-  defp assign_order(%Practise{} = practise, %Order{contractors_needed: number} = order) do
+  defp assign_order(%Practise{} = practise, %Order{} = order, _bid_id) do
     practise
     # add the build_assoc
     |> Ecto.build_assoc(:orders, %{
@@ -240,7 +278,7 @@ defmodule Wynix do
   end # end of assign order
 
   # function for updating the merge_and_update_orders
-  defp merge_and_update_orders(new_order, old_oder) do
+  defp merge_and_update_orders(new_order, old_order) do
     old_order
     |> Map.merge(new_order)
     |> Repo.update()

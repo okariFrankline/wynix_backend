@@ -12,6 +12,7 @@ defmodule Wynix.Skills.Practise do
     field :cities, {:array, :string}
     field :country, :string, virtual: true
     field :countries, {:array, :string}
+    field :practise_name, :string
     field :practise_code, :string
     field :practise_type, :string
     field :rank, :string
@@ -31,6 +32,7 @@ defmodule Wynix.Skills.Practise do
     practise
     |> cast(attrs, [
       :practise_code,
+      :practise_name,
       :rank,
       :practise_type,
       :rating,

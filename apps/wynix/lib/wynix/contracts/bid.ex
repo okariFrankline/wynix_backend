@@ -24,7 +24,7 @@ defmodule Wynix.Contracts.Bid do
       :deposit_amount,
       :asking_amount,
       :status,
-      :owner_name
+      :owner_name,
       :order_id,
       :practise_id
     ])

@@ -9,6 +9,7 @@ defmodule Wynix do
   alias Wynix.{Accounts, Skills, Contracts, Repo}
   alias Wynix.Contracts.{Bid, Order, Practise}
   alias Wynix.Accounts.{User, Account}
+  alias Wynix.Utils.{Generator}
   import Ecto.Query
 
   @doc """
@@ -25,7 +26,9 @@ defmodule Wynix do
         # set the account name, default to the username
         account_name: user.username,
         # set the auth email as one of the emails for the account
-        emails: [user.auth_email]
+        emails: [user.auth_email],
+        # account code
+        account_code: Generator.generate()
       })
       # create the account
       |> Repo.insert!()
@@ -54,16 +57,32 @@ defmodule Wynix do
     end # end of creating a user
   end # end fo create_user/2 for practise
 
-  def create_user(:client, attrs) do
-    with {:ok, user} <- Accounts.create_user(attrs) do
+  def create_user(:client, %{"password" => password, "account_type" => acc_type, "auth_email"=> email}) do
+    with {:ok, user} <- Accounts.create_user(%{"auth_email"=> email, "password" => password}) do
       # create an account for the user
-      {:ok, account} = user |> Ecto.build_assoc(attrs) |> Accounts.create_account()
+      account = user
+      # add the account id and the required information
+      |> Ecto.build_assoc(:account, %{
+        # set the account type
+        account_type: acc_type,
+        # set the account name, default to the username
+        account_name: user.username,
+        # set the auth email as one of the emails for the account
+        emails: [user.auth_email],
+        # account code
+        account_code: Generator.generate()
+      })
+      # insert the account to the db
+      |> Repo.insert!()
+      # preload the user
+      |> Repo.preload([
+        user: from(
+          user in User,
+          select: [user.id, user.token]
+        )
+      ])
       # preload the practise and the account
-      {:ok, %{
-        user: user,
-        account: account
-      }}
-
+      {:ok, account}
     else
       {:error, _changeset} = changeset ->
         # return the changeset

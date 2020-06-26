@@ -18,7 +18,6 @@ defmodule WynixWeb.UserView do
         location: render_one(account.location, UserView, "location.json"),
         banking: render_one(account.banking, UserView, "banking.json"),
         user: render_one(account.user, UserView, "user.json"),
-        transactions: render_many(account.transactions, UserView, "transactions.json"),
         is_suspended: account.is_suspended
       }
     }}

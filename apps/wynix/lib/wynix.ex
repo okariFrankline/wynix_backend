@@ -117,11 +117,15 @@ defmodule Wynix do
     # start a supervised process for rejecting a bid
     Supervisor.start_link([
       {Task, fn ->
-        Contracts.update_bid(bid, %{status: "Rejected"})
+        # get the bid
+        with bid <- Contracts.get_bid!(bid_id),
+          # update the bid
+          {:ok, _bid} <- bid |> Ecto.Changeset.change(%{status: "Rejected"}) |> Repo.update() do
+          # send the owner of the bid a notification
+          send_bid_owner_notification(bid.practise_id, :order_cancelled)
+        end # end of rejecting the bid
       end}
     ], strategy: :one_for_one)
-    # return ok
-    :ok
   end # end of reject_bid/1
 
   @doc """"
@@ -150,6 +154,44 @@ defmodule Wynix do
       result
     end # end of with for assigning the contract
   end # end of the accept_bid function/3
+
+  @doc """
+    Cancel order cancels an order that has been made
+  """
+  def cancel_order(order_id) do
+    # get the order with given id from the db and preload all the bids
+    order = Contracts.get_order!(order_id) |> Repo.preload([:bids])
+    # check if the order has any practise assigned to it
+    if order.practise_id do
+      {:error, :already_assigned}
+    else
+      # cancel the order
+      with {:ok, _order} = result <- Ecto.Changeset.change(order, %{status: "Cancelled"}) |> Repo.update() do
+        # start a process for rejecting all the bids made for this order
+        Supervisor.Start_link([
+          {Task, fn ->
+            with bids when bids != [] <- order.bids do
+              # for each of the bids, reject then
+              Stream.each(bids, fn bid ->
+                # start a supervised tak for rejecting the bid
+                Supervisor.start_link([
+                  {Task, fn ->
+                    with {:ok, _bid} <- bid |> Ecto.Changeset.change(%{status: "Rejected"}) |> Repo.update() do
+                      # send the owner of the bid a notification
+                      send_bid_owner_notification(bid.practise_id, :order_cancelled)
+                    end # end of rejecting the bid
+                  end} # end of task for rejecting a single bid
+                ], strategy: :one_for_one)
+              end)
+            end # end with for checking if the order has bids
+          end} # end of tak for running the stream for each of the bids
+
+        ], strategy: :one_for_one)
+        # return the order
+        result
+      end # end of with for cancelling the order
+    end # end of checking if the order has being assigned
+  end # end of cancel_order/1
 
 
   defp assign_order(%Practise{} = practise, %Order{contractors_needed: number} = order) when number - 1 == 0 do
@@ -197,10 +239,16 @@ defmodule Wynix do
     |> merge_and_update_orders(order)
   end # end of assign order
 
+  # function for updating the merge_and_update_orders
   defp merge_and_update_orders(new_order, old_oder) do
     old_order
     |> Map.merge(new_order)
     |> Repo.update()
+  end
+
+  # send_bid_owner_bid otification
+  def send_bid_owner_notification(_practise_id, reason) do
+    reason
   end
 
 end # function for creating a user

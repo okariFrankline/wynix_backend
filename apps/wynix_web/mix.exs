@@ -51,7 +51,8 @@ defmodule WynixWeb.MixProject do
       {:absinthe, "~> 1.5"},
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
-      {:guardian, "~> 2.1"}
+      {:guardian, "~> 2.1"},
+      {:poison, "~> 4.0"}
     ]
   end
 

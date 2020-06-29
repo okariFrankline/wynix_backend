@@ -11,20 +11,30 @@ defmodule WynixWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug Plug.Parsers,
+      parsers: [:urlencoded, :multipart, :json],
+      pass: ["*/*"],
+      json_decoder: Poison
+    # Add the user context plug to the context
+    plug WynixWeb.Plugs.UserContext
   end
 
-  scope "/", WynixWeb do
-    pipe_through :browser
+  if Mix.env == :dev do
 
-    get "/", PageController, :index
+    scope "/graphiql" do
+      pipe_through :api
+
+      forward "/", Absinthe.Plug.GraphiQL, schema: EjobWeb.Schema
+    end # end of scope
+
+  end # end of if
+
+  scope "/graphql" do
+    pipe_through :api
+
+    forward "/", Absinthe.Plug,
+      schema: EjobWeb.Schema
   end
-
-  #Other scopes may use custom stacks.
-   scope "/api", WynixWeb do
-     pipe_through :api
-
-     resources "/users", UserController, except: [:new, :edit]
-   end
 
   # Enables LiveDashboard only for development
   #

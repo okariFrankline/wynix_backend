@@ -10,7 +10,7 @@ defmodule WynixWeb.Plugs.UserContext do
   # imprt where
   import Ecto.Query, only: [where: 2]
   # alias Repo
-  alias Ejob.Repo
+  alias Wynix.Repo
 
   def init(opts), do: opts
 

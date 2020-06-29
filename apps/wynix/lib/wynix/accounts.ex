@@ -219,6 +219,42 @@ defmodule Wynix.Accounts do
   end
 
   @doc """
+  Updates a account.
+
+  ## Examples
+
+      iex> update_account_banking(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_banking(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_banking(%Account{} = account, attrs) do
+    account
+    |> Account.banking_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a account's location.
+
+  ## Examples
+
+      iex> update_account_location(account, %{field: new_value})
+      {:ok, %Account{}}
+
+      iex> update_account_location(account, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_account_location(%Account{} = account, attrs) do
+    account
+    |> Account.location_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Updates a account's location.
 
   ## Examples

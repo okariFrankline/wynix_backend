@@ -7,7 +7,7 @@ defmodule Wynix.Accounts.Account do
   import Ecto.Changeset
 
   alias Wynix.Accounts.User
-  alias Wynix.Utils.{Validations, Puid}
+  alias Wynix.Utils.{Validations, Generator}
 
   @mpesa_countries ["Kenya", "Tanzania", "Uganda", "Rwanda", "South Sudan", "Mozambique", "Ghana", "Egypt"]
 
@@ -38,18 +38,14 @@ defmodule Wynix.Accounts.Account do
     # publish tokens
     field :publish_tokens, :integer, default: 5
     # banking information
-    embeds_one :banking, Banking do
-      field :bank_name, :string
-      field :bank_branch, :string
-      field :account_number, :string
-    end # end of the banking embeds
+    field :bank_name, :string
+    field :bank_branch, :string
+    field :account_number, :string
+    # location information
+    field :country, :string
+    field :city, :string
+    field :physical_address, :string
 
-    # residence information
-    embeds_one :location, Location do
-      field :country, :string
-      field :city, :string
-      field :physical_address, :string
-    end # end of the location embeds
 
     # relationships
     belongs_to :user, User
@@ -71,12 +67,11 @@ defmodule Wynix.Accounts.Account do
       :bid_tokens,
       :publish_tokens,
       :account_type,
-      :account_code
+      :account_code,
+      :account_number,
+      :bank_branch,
+      :bank_name
     ])
-    # cast the banking
-    |> cast_embed(:banking, with: &banking_changeset/2)
-    # cast the location
-    |> cast_embed(:location, with: &location_changeset/2)
   end
 
   @doc false
@@ -87,14 +82,8 @@ defmodule Wynix.Accounts.Account do
   end
 
   @doc false
-  def banking_changeset(banking, attrs) do
-    banking
-    # cast the fields
-    |> cast(attrs, [
-      :bank_name,
-      :bank_branch,
-      :account_number
-    ])
+  def banking_changeset(account, attrs) do
+    changeset(account, attrs)
     # ensure all the fields are given
     |> validate_required([
       :bank_name,
@@ -104,19 +93,12 @@ defmodule Wynix.Accounts.Account do
   end # end of the banking changeset
 
   @doc false
-  def location_changeset(location, attrs) do
-    location
-    # cast the fields
-    |> cast(attrs, [
-      :country,
-      :city,
-      :physical_address
-    ])
+  def location_changeset(account, attrs) do
+    changeset(account, attrs)
     # validate the required fields
     |> validate_required([
       :country,
-      :city,
-      :physical_address
+      :city
     ])
   end # end of location changeset
 
@@ -234,7 +216,7 @@ defmodule Wynix.Accounts.Account do
   defp validate_phone_not_repeated(changeset), do: changeset
 
   # validate phone format checks to ensure the phone number is valid for the country in which it is entered
-  defp validate_phone_format(%Ecto.Changeset{valid?: true, changes: %{mpesa_number: number}, data: %__MODULE__{location: %__MODULE__.Location{country: country}}} = changeset) do
+  defp validate_phone_format(%Ecto.Changeset{valid?: true, changes: %{mpesa_number: number}, data: %__MODULE__{country: country}} = changeset) do
     # check to ensure the country is in mpesa_countries
     if country in @mpesa_countries do
       # validate the number for the country given by the user

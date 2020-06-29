@@ -9,7 +9,7 @@ defmodule Wynix.Accounts.User do
   @foreign_key_type :binary_id
   schema "users" do
     field :account_type, :string
-    field :email, :string
+    field :auth_email, :string
     field :is_active, :boolean, default: false
     field :is_suspended, :boolean, default: false
     field :password_hash, :string
@@ -22,7 +22,6 @@ defmodule Wynix.Accounts.User do
 
     # relationships
     has_one :account, Account
-
     timestamps()
   end
 
@@ -31,7 +30,7 @@ defmodule Wynix.Accounts.User do
     user
     |> cast(attrs, [
       :username,
-      :email,
+      :auth_email,
       :password_hash,
       :is_active,
       :account_type,
@@ -43,11 +42,11 @@ defmodule Wynix.Accounts.User do
   def creation_changeset(user, attrs) do
     changeset(user, attrs)
     |> cast(attrs, [
-      :password
+      :current_password
     ])
     # ensure the fields are given
     |> validate_required([
-      :email,
+      :auth_email,
       :account_type,
       :password
     ])
@@ -62,24 +61,30 @@ defmodule Wynix.Accounts.User do
     # hash the password
     |> hash_password()
     # unique constraint on the email address
-    |> unique_constraint(:email, message: "The email address #{attrs["email"]} is already taken.")
+    |> unique_constraint(:auth_email, message: "The email address #{attrs["auth_email"]} is already taken.")
   end # end of the creation changeset
 
   @doc false
   def email_change_changeset(user, attrs) do
     changeset(user, attrs)
+    |> cast(attrs, [
+      :password
+    ])
     # ensure email is given
     |> validate_required([
-      :email
+      :auth_email
+      :password
     ])
     # validate the email format
     |> Validations.validate_email_format()
+    # validate the current password
+    |> validate_current_password()
     # insert the new username
     |> insert_username()
     # ensure the new email is not similar to the current email in use
     |> validate_new_not_equal_to_current_email()
     # ensure the emailis unique
-    |> unique_constraint(:email, [
+    |> unique_constraint(:auth_email, [
       message: "Failed. The email address #{attrs["emal"]} has been taken."
     ])
   end # end of the email change changeset
@@ -108,7 +113,7 @@ defmodule Wynix.Accounts.User do
 
 
   @doc false
-  defp insert_username(%Ecto.Changeset{valid?: true, changes: %{email: email}} = changeset) do
+  defp insert_username(%Ecto.Changeset{valid?: true, changes: %{auth_email: email}} = changeset) do
     # get the username from the email
     [_email, username, _domain] = Regex.run(~r/(\w+)@([\w.]+)/, email)
     # add the username to the changeset
@@ -141,10 +146,10 @@ defmodule Wynix.Accounts.User do
 
   #  Valite new not equal to current email compares the new email entered and the current email in use and
   #  ensures that they are not similar
-  defp validate_new_not_equal_to_current_email(%Ecto.Changeset{valid?: true, changes: %{email: email}, data: %__MODULE__{email: current_email}} = changeset)do
+  defp validate_new_not_equal_to_current_email(%Ecto.Changeset{valid?: true, changes: %{auth_email: email}, data: %__MODULE__{email: current_email}} = changeset)do
     if email === current_email do
       # add error on the password
-      changeset |> add_error(:email, "Failed. The new email entered and the current email in use are similar.")
+      changeset |> add_error(:auth_email, "Failed. The new email entered and the current email in use are similar.")
     else
       # return the changeset
       changeset

@@ -103,9 +103,9 @@ defmodule Wynix.Contracts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_order_bio(%Order{} = order, attrs) do
+  def update_order_description(%Order{} = order, attrs) do
     order
-    |> Order.update_bio_changeset(attrs)
+    |> Order.update_description_changeset(attrs)
     |> Repo.update()
   end
 

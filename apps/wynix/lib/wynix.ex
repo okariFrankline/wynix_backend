@@ -111,7 +111,7 @@ defmodule Wynix do
     Create order creates an order and creates a new token for the given
   """
   def create_order(%Accounts.Account{} = owner_account, order_attrs) when is_map(order_attrs) do
-    with {:ok, _order} = changeset <- owner_account |> Ecto.build_assoc(order_attrs) do
+    with {:ok, _order} = changeset <- owner_account |> Ecto.build_assoc(:orders, order_attrs) |> Contracts.create_order() do
       # return the order
       changeset
     else
@@ -122,49 +122,67 @@ defmodule Wynix do
   @doc """
     Updates the contract
   """
-  def update_order(type, %Contracts.Order{} = order, order_attributes) when is_atom(type) and is_map(order_attributes) do
-    case type do
-      :payment ->
-        # update the order's payment
-        Contracts.update_order_payment(order, order_attributes)
-      # updates the service
-      :service ->
-        # update the order's payment
-        Contracts.update_order_service(order, order_attributes)
-      # updates the bio
-      :bio ->
-        # update the order's payment
-        Contracts.update_order_bio(order, order_attributes)
-
+  def delete_order(%Order{status: status} = order) do
+    # check the status of the orde
+    case status do
+      "In Progress" ->
+        # return an error
+        :error
+      # the order has not being assigned.
       _ ->
-        # update the order
-        Contracts.update_order(order, order_attributes)
-    end # end of type
-  end # end of update_order/2
+        # start a supervisor for deleting the order
+        Supervisor.start_link([
+          {Task, fn ->
+            Contracts.delete_order()
+          end}
+        ], strategy: :one_for_one)
+        # return ok
+        :ok
+    end # end of checking the status
+  end # end of function for deleting the order
 
   @doc """
     Create bid creates a bid for a given order and for a given user
   """
-  def create_bid(%Skills.Practise{id: owner_id, practise_name: owner_name} = _owner, order_id) do
-    # start a supervised process to create the bid
-    Supervisor.start_link([
-      {Task, fn ->
-        # get the order from the db
-        with %Order{} = order <- Contracts.get_order!(order_id) do
-          # check if the order has been cancelled
-          if order.status != "Cancelled" do
-            with {:ok, bid} <- Contracts.create_bid(%{practise_id: owner_id, owner_name: owner_name, order_id: order.id}) do
-              bid
-            end # end of creating the bid
-          end # end of checking if the order is cancelled
-        else
-          _ ->
-            :error
-        end # end of the with for getting the order
-      end}
-    ], strategy: :one_for_one)
-    # return ok
-    :ok
+  def create_bid(practise_name, practise_id, order_id, bid_params) when is_map(bid_params) do
+    # ger order
+    order = Contracts.get_order!(order_id)
+    # check if the bid is cancelled
+    if order.status != "Cancelled" do
+      with {:ok, _bid} = result <- Contracts.create_bid(Map.merger(bid_params, %{"practise_id" => practise_id, "owner_name" => practise_name, "order_id" => order.id})) do
+        # start a supervised task to create a token history of type "Bid token
+        Supervisor.start_link([
+          {Task, fn ->
+            # get the account for which the practise belongs to
+            practise = from(
+              practise in Practise,
+              where: practise.id == ^practise_id,
+              join: account in assoc(practise, :account),
+              preload: [:account]
+            )
+            # get the practise
+            |> Repo.one()
+
+            # create a token history
+            practise.account
+            # add the account id to the tokens
+            |> Ecto.build_assoc(:tokens, %{
+              order_id: order_id,
+              token_type: "Bid Token",
+              order_code: order.code
+            })
+            # create the token
+            |> Accounts.create_token_history()
+
+          end}
+        ], strategy: :one_for_one)
+        # return response
+        result
+      end # end of creating the bid
+    else
+      {:error, :cancelled_order}
+    end # end of checking if the order is cancelled
+
   end # end of create_bid/3
 
   @doc """
@@ -249,6 +267,21 @@ defmodule Wynix do
       end # end of with for cancelling the order
     end # end of checking if the order has being assigned
   end # end of cancel_order/1
+
+  @doc """
+    Gets the bids for a given order
+  """
+  def get_bids_for_order(order_id) when is_binary(order_id) do
+    # query for the orders
+    from(
+      bid in Bid,
+      where: bid.order_id == ^order_id,
+      where: bid.status != "Rejected",
+      select: [bid.id, bid.owner_name, bid.practise_id, bid.asking_amount, bid.deposit_amount]
+    )
+    # return all the bids
+    |> Repo.all()
+  end # end of get_bids_for_order/1
 
 
   defp assign_order(%Practise{} = practise, %Order{contractors_needed: number} = order, bid_id) when number - 1 == 0 do

@@ -61,10 +61,10 @@ defmodule Wynix.Contracts.Order do
   end # end of creation_changeset/2
 
   @doc false
-  def update_bio_changeset(order, attrs) do
+  def update_description_changeset(order, attrs) do
     changeset(order, attrs)
     |> validate_required([
-      :bio
+      :description
     ])
   end # end of update_bio_changeset/2
 

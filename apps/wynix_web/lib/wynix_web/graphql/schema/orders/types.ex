@@ -1,162 +1,150 @@
 defmodule WynixWeb.Schema.Types.Orders do
   @moduledoc """
-    Defines the graphql schema types for the Orders
+    Defines graphql schema types for the orders
   """
   use Absinthe.Schema.Notation
-  alias WynixWeb.Schema.Accounts.Resolver
+  alias WynixWeb.Schema.Orders.Resolver
 
-  # account
-  object :account do
-    field :account_code, non_null(:string)
-    # account type
-    field :account_type, non_null(:string)
-    # is suspended
-    field :is_suspended, non_null(:boolean)
-    # full name of the name
-    field :account_name, non_null(:string)
+  # order
+  object :order do
+    field :id, non_null(:id)
+    field :amount, :float
+    field :bid_deadline, :date
+    field :contractors_needed, :integer
+    field :description, :string
+    field :order_category, :string
+    field :order_code, :string
+    field :order_length, :string
+    field :order_type, :string
+    field :payable_amount, :string
+    field :payment_at, :string
+    field :proposal_required, :boolean
+    field :status, :string
+  end # end of order
 
-    # payment information
-    field :mpesa_number, :string
-    field :paypal, :string
-    field :payoneer, :string
+  # bid object
+  object :bid do
+    field :id, non_null(:id)
+    field :asking_amount, non_null(:decimal)
+    field :deposit_amount, :decimal
+    field :practise_id, non_null(:id)
+    field :owner_name, non_null(:string)
+  end # end of bid object
 
-    # contact infromation
-    field :emails, non_null(list_of(:string))
-    field :phones, non_null(list_of(:string))
+  # order input
+  object :order_input do
+    field :order_type, non_null(:string)
+    field :order_category, non_null(:string)
+  end # end of order input
 
-    # tokens
-    field :bid_tokens, non_null(:integer)
-    field :publish_tokens, non_null(:integer)
+  # order details input
+  object :order_details_input do
+    field :proposal_required, non_null(:boolean)
+    field :contractors_needed, non_null(:integer)
+    field :order_length, non_null(:string)
+    field :bid_deadline, non_null(:date)
+  end # end of the order_details_input
 
-    # baking information
-    field :bank_name, :string
-    field :bank_branch, :string
-    field :account_number, :string
+  # order payment info
+  object :order_payment do
+    field :payment_at, non_null(:string)
+    field :payable_amount, non_null(:decimal)
+    field :currency, non_null(:string)
+  end # end of order payment
 
-    # location information
-    field :country, :string
-    field :city, :string
-    field :physical_address, :string
-  end # describes the account of a given user
-
-  # error
-  object :account_error do
+  # order error
+  object :order_error do
     field :key, non_null(:string)
     field :message, non_null(:string)
-  end # end of account error
+  end # end of order_error
 
-  # account result
-  object :account_result do
-    field :account, non_null(:account)
-    # errors
-    field :errors, list_of_errors(:account_error)
-  end # end of account result
+  # order result
+  object :order_result do
+    field :order, :order
+    field :errors, list_of(:order_error)
+  end # end of order result
 
+  # delete_result
+  object :delete_result do
+    field :message, :string
+    field :errors, list_of(:order_error)
+  end # end of delete result
 
-  # account creation input
-  input_object :account_input do
-    field :email, non_null(:string)
-    field :password, non_null(:string)
-    field :account_type, (non_null(:string))
-    field :practise_type, :string
-  end # end of input object for the account
+  # orders queries
+  object :orders_queries do
+    @desc "Get order returns an order specified by a given id"
+    field :get_order, non_null(:order_result) do
+      arg :order_id, non_null(:id)
 
-  # input for adding the bank account
-  input_object :banking_input do
-    field :bank_account, non_null(:string)
-    field :bank_branch, non_null(:string)
-    field :account_number, non_null(:string)
-  end # end of the banking info input
+      resolve(&Resolver.get_order/3)
+    end # end of get_order
 
-  # location information
-  input_object :location_input do
-    field :country, non_null(:string)
-    field :city, non_null(:string)
-    field :physical_addres, non_null(:string)
-  end # end of the location input
+    @desc "Get Order bids returns the bids for a given order"
+    field :get_order_bids, non_null(list_of(:bid)) do
+      arg :order_id, non_null(:id)
 
-  # email auth input object
-  input_object :email_auth_input do
-    field :auth_email, non_null(:string)
-    field :current_password, non_null(:string)
-  end # end of email auth_input
+      resolve(&Resolver.get_order_bids/3)
+    end # end of get_order_bids
 
-  # password auth input object
-  input_object :password_auth_input do
-    field :current_password, non_null(:string)
-    field :password, non_null(:string)
-  end # end of email auth_input
+    @desc "Get Order proposal returns the proposals for a given order"
+    field :get_order_bids, non_null(list_of(:proposal)) do
+      arg :order_id, non_null(:id)
 
-  #queries
-  object :account_queries do
-    @desc "Get account returns the account details specified by a given id"
-    field :get_account, non_null(:account_result) do
-      arg :id, non_null(:id)
+      resolve(&Resolver.get_order_proposal/3)
+  end # end of the orders_queries
 
-      resolve(&Resolver.get_account/3)
-    end # end of get user
-  end # end of the account queries
+  # orders mutations
+  object :orders_mutations do
+    @desc "Create order creates a new order and returns the order"
+    field :create_order, non_null(:order_result) do
+      arg :input, non_null(:order_input)
 
-  # mutations
-  object :account_mutations do
-    @desc "Create account creates an account for a new user and return the account"
-    field :create_account, non_null(:account_result) do
-      arg :input, non_null(:account_input)
+      resolve(&Resolver.create_order/3)
+    end # end of create order
 
-      resolve(&Resolver.create_account/3)
-    end
+    @desc "Update order updates the order overview and returns the order"
+    field :update_order_service, non_null(:order_result) do
+      arg :order_id, non_null(:id)
+      arg :input, non_null(:order_input)
 
-    @desc "Update Location updates the location of an account and returns the account"
-    field :update_location, non_null(:account_result) do
-      arg :id ,non_null(:id)
-      arg :input, non_null(:location_input)
+      resolve(&Resolver.update_order/3)
+    end # end of update order
 
-      resolve(&Resolver.update_location/3)
-    end # end of the location field
+    @desc "Update order details updates the details of an order and returns the order"
+    field :update_order_details, non_null(:order_result) do
+      arg :order_id, non_null(:id)
+      arg :input, non_null(:order_details_input)
 
-    @desc "Update Banking updates the banking information of an account and returns the account"
-    field :update_banking, non_null(:account_result) do
-      arg :account_id, non_null(:id)
-      arg :input, non_null(:banking_input)
+      resolve(&Resolver.update_order_details/3)
+    end # end of update_order_details
 
-      resolve(&Resolver.update_banking/3)
-    end
+    @desc "Update order payment updates the payment information of an order and returns the order"
+    field :update_order_payment, non_null(:order_result) do
+      arg :order_id, non_null(:id)
+      arg :input, non_null(:order_payment_input)
 
-    @desc "Update paypal updates the paypal account information for a user and returns the account"
-    field :update_paypal, non_null(:account_result) do
-      arg :input, non_null(:string)
+      resolve(&Resolver.update_order_payment/3)
+    end # end of update order payment
 
-      resolve(&Resolver.update_paypal/3)
-    end # end of update_paypal
+    @desc "Update order description updates the description of an order and returns the order"
+    field :update_order_description, non_null(:order_result) do
+      arg :order_id, non_null(:id)
+      arg :description, non_null(:string)
 
-    @desc "Update payoneer updates the payoneer account information for a user and returns the account"
-    field :update_payoneer, non_null(:account_result) do
-      arg :input, non_null(:string)
+      resolve(&Resolver.update_order_description/3)
+    end # end of update order description
 
-      resolve(&Resolver.update_payoneer/3)
-    end # end of update_paypal
+    @desc "Delete order deletes an order and returns a confirmation message"
+    field :delete_order, non_null(:delete_error) do
+      field :order_id, non_null(:id)
 
-    @desc "Update mpesa updates the mpesa account information for a user and returns the account"
-    field :update_mpesa, non_null(:account_result) do
-      arg :input, non_null(:string)
+      resolve(&Resolver.delete_order/3)
+    end # end of delete order
 
-      resolve(&Resolver.update_mpesa/3)
-    end # end of update_paypal
-
-    @desc "Update auth email updates the autentication email for a given account and returns the account"
-    field :update_auth_email, non_null(:account_result) do
-      arg :input, non_null(:email_auth_input)
-
-      resolve(&Resolver.update_auth_email/3)
-    end # end of update_auth_email
-
-    @desc "Updates the auth password of the current account and returns the account"
-    field :update_auth_password, non_null(:account_result) do
-      arg :input, non_null(:password_auth_input)
-
-      resolve(&Resolver.update_auth_password/3)
-    end # end of update_auth_password
-  end # end of the account mutations
-
-
-end # end of the Accounts types
+    @desc "Cancel order cancels and order and returns the cancelled order"
+    field :cancel_order, non_null(:order_result) do
+      arg :order_id, non_null(:string)
+    end # end of cancel order
+    
+  end # end of the orders_mutations
+end # end of the orders type module

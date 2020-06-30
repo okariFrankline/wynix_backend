@@ -10,8 +10,6 @@ defmodule Wynix.Contracts.Practise do
     field :practise_name, :string
     field :practise_code, :string
 
-    # can have many orders assigned to current user
-    has_many :orders, Wynix.Contracts.Order
     # can have many bids
     has_many :bids, Wynix.Contracts.Bid
   end # end of the practises schema

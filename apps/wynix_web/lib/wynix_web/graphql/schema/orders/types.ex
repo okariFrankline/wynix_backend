@@ -20,7 +20,13 @@ defmodule WynixWeb.Schema.Types.Orders do
     field :payment_at, :string
     field :proposal_required, :boolean
     field :status, :string
+    field :practise, list_of(:practise)
   end # end of order
+
+  object :practise do
+    field :id, non_null(:id)
+    field :practise_name, non_null(:practise_name)
+  end # end of practise
 
   # bid object
   object :bid do
@@ -145,6 +151,13 @@ defmodule WynixWeb.Schema.Types.Orders do
     field :cancel_order, non_null(:order_result) do
       arg :order_id, non_null(:string)
     end # end of cancel order
-    
+
+    @desc "Accept bid accepts the bid for a given order"
+    field :accept_bid, non_null(:order_result) do
+      arg :bid_id, non_null(:id)
+
+      resolve(&Resolver.accept_bid/3)
+    end # end of the accept_bid
+
   end # end of the orders_mutations
 end # end of the orders type module

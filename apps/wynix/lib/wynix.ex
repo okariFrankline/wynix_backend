@@ -201,7 +201,28 @@ defmodule Wynix do
         end # end of rejecting the bid
       end}
     ], strategy: :one_for_one)
+    :ok
   end # end of reject_bid/1
+
+  @doc false
+  def cancel_bid(bid_id) when is_binary(bid_id) do
+    # get teh bid
+    bid = Contracts.get_bid!(bid_id)
+    # check if the bid has been accepted
+    if bid.status != "Accepted" do
+      # cancel the bid
+      bid
+      |> Ecto.Changeset.change(%{
+        status: "Cancelled"
+      })
+      # update the result
+      |> Repo.update()
+
+      else
+        # return accepted
+        :accepted
+    end # end of if
+  end # end of cancel_bid
 
   @doc """
     Accepts a bid
@@ -296,7 +317,7 @@ defmodule Wynix do
             where: bid.status == "Pending"
           )
         ])
-        # for each of the bids, reject them
+        # for each of the bids, reject them    has_many :orders, Wynix.Contracts.Order
         Stream.each(bids, fn bid ->
           # for each of the bids in the list start a supervised process to reject the orders
           Supervisor.start_link([
@@ -334,6 +355,8 @@ defmodule Wynix do
     old_order
     |> Map.merge(new_order)
     |> Repo.update()
+    # preload the practises
+    |> Repo.prelaod([:practises])
   end
 
   # send_bid_owner_bid otification

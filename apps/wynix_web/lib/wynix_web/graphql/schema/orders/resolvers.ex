@@ -82,5 +82,13 @@ defmodule WynixWeb.Schema.Orders.Resolver do
     end # end of with
   end # end of delete_order/3
 
+  @doc false
+  def accept_bid(_parant, args, _resolution) do
+    with {:ok, _order} = result <- Wynix.accept_bid(args.bid_id) do
+      # return the result
+      result
+    end # end
+  end # end of the accept bid/3
+
 
 end # end of the accounts resolvers

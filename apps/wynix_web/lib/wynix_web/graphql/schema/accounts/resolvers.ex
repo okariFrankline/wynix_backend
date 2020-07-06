@@ -79,9 +79,9 @@ defmodule WynixWeb.Schema.Accounts.Resolver do
     # preload the auth user for the account
     auth_user = Repo.prelaod(account, :user)
     # update the auth email
-    with {:ok, user} <- Accounts.update_user_auth_email(user, auth_input), account <- Repo.preload(user, :account) do
+    with {:ok, user} <- Accounts.update_user_auth_email(auth_user, auth_input), account <- Repo.preload(user, :account) do
       # return the account
-      {:ok account}
+      {:ok, account}
     end # end of with
   end # end of update_auth_email/3
 

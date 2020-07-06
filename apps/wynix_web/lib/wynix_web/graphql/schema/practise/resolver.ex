@@ -2,7 +2,7 @@ defmodule WynixWeb.Schema.Practise.Resolver do
   @moduledoc """
     Defines resolver functions for the practise schema type
   """
-  alias Wynix.Skills.{Practise}
+  #alias Wynix.Skills.{Practise}
   alias Wynix.{Skills, Repo}
 
   @errors [%{

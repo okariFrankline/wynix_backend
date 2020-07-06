@@ -24,7 +24,7 @@ defmodule WynixWeb.Router do
     scope "/graphiql" do
       pipe_through :api
 
-      forward "/", Absinthe.Plug.GraphiQL, schema: EjobWeb.Schema
+      forward "/", Absinthe.Plug.GraphiQL, schema: WynixWeb.Schema
     end # end of scope
 
   end # end of if
@@ -33,7 +33,7 @@ defmodule WynixWeb.Router do
     pipe_through :api
 
     forward "/", Absinthe.Plug,
-      schema: EjobWeb.Schema
+      schema: WynixWeb.Schema
   end
 
   # Enables LiveDashboard only for development

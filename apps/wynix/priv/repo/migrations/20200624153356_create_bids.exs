@@ -8,6 +8,7 @@ defmodule Wynix.Repo.Migrations.CreateBids do
       add :asking_amount, :float
       add :status, :string
       add :owner_name, :string
+      add :bid_code, :string, null: false
       add :order_id, references(:orders, on_delete: :nothing, type: :binary_id)
       add :practise_id, references(:practises, on_delete: :nothing, type: :binary_id)
 
@@ -16,5 +17,6 @@ defmodule Wynix.Repo.Migrations.CreateBids do
 
     create index(:bids, [:order_id])
     create index(:bids, [:practise_id])
+    create index(:bids, [:bid_code])
   end
 end

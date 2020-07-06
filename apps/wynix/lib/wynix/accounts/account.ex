@@ -20,7 +20,7 @@ defmodule Wynix.Accounts.Account do
     # is suspended
     field :is_suspended, :boolean, default: false
     # full name of the name
-    field :account_name, :string
+    field :account_holder, :string
     # mpesa phone number
     field :mpesa_number, :string
     # paypal account
@@ -54,6 +54,10 @@ defmodule Wynix.Accounts.Account do
     timestamps()
   end # end of the schema definition
 
+  @spec changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def changeset(account, attrs) do
     account
@@ -63,7 +67,7 @@ defmodule Wynix.Accounts.Account do
       :payoneer,
       :emails,
       :phones,
-      :account_name,
+      :account_holder,
       :bid_tokens,
       :publish_tokens,
       :account_type,
@@ -74,6 +78,10 @@ defmodule Wynix.Accounts.Account do
     ])
   end
 
+  @spec creation_changeser(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def creation_changeser(account, attrs) do
     changeset(account, attrs)
@@ -81,6 +89,10 @@ defmodule Wynix.Accounts.Account do
     |> add_account_code()
   end
 
+  @spec banking_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def banking_changeset(account, attrs) do
     changeset(account, attrs)
@@ -92,6 +104,10 @@ defmodule Wynix.Accounts.Account do
     ])
   end # end of the banking changeset
 
+  @spec location_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def location_changeset(account, attrs) do
     changeset(account, attrs)
@@ -102,6 +118,10 @@ defmodule Wynix.Accounts.Account do
     ])
   end # end of location changeset
 
+  @spec add_email_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: any
   @doc false
   def add_email_changeset(account, attrs) do
     changeset(account, attrs)
@@ -120,6 +140,10 @@ defmodule Wynix.Accounts.Account do
     |> add_to_email_list()
   end # end of the add_email_changeset/2
 
+  @spec add_payoneer_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_payoneer_changeset(account, attrs) do
     changeset(account, attrs)
@@ -136,6 +160,10 @@ defmodule Wynix.Accounts.Account do
     ])
   end # end of add_payoneer-changeset/2
 
+  @spec add_paypal_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_paypal_changeset(account, attrs) do
     changeset(account, attrs)
@@ -152,6 +180,10 @@ defmodule Wynix.Accounts.Account do
     ])
   end # end of the add_paypal_account/2
 
+  @spec add_mpesa_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_mpesa_changeset(account, attrs) do
     changeset(account, attrs)
@@ -170,6 +202,10 @@ defmodule Wynix.Accounts.Account do
     ])
   end # end of the add_mpesa_changeset
 
+  @spec add_phone_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_phone_changeset(account, attrs) do
     changeset(account, attrs)

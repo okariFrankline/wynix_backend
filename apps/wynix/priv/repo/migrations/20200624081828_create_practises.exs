@@ -13,7 +13,7 @@ defmodule Wynix.Repo.Migrations.CreatePractises do
       add :cities, {:array, :string}, default: []
       add :skills, {:array, :string}, default: []
       add :practise_name, :string, null: false
-      add :operate_outside_base_location :boolean, default: false
+      add :operate_outside_base_location, :boolean, default: false
       add :professional_level, :string, null: true, default: "Amateur"
 
       add :account_id, references(:accounts, on_delete: :delete_all, type: :binary_id)
@@ -21,10 +21,12 @@ defmodule Wynix.Repo.Migrations.CreatePractises do
       timestamps()
     end
 
-    create index(:practises, [:full_name])
+    create index(:practises, [:practise_name])
     create unique_index(:practises, [:practise_code])
     create index(:practises, [:practise_type])
     create index(:practises, [:account_id])
+    create index(:practises, [:professional_level])
+    create index(:practises, [:rank])
   end
 
 end # end of the module definition

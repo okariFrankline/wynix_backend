@@ -8,14 +8,15 @@ defmodule Wynix do
   """
   alias Wynix.{Accounts, Skills, Contracts, Repo}
   alias Wynix.Contracts.{Bid, Order, Practise}
-  alias Wynix.Accounts.{User, Account}
+  #alias Wynix.Accounts.{User, Account}
   alias Wynix.Utils.{Generator}
   import Ecto.Query
 
+  @spec create_user(:client | :practise, map) :: {:error, Ecto.Changeset} | {:ok, Accounts.Account}
   @doc """
     Create user creates a user together with his/her account and practise depending on the account type
   """
-  def create_user(:practise, %{"password" => password, "account_type" => acc_type, "auth_email"=> email, "practise_type" => practise_type}) do
+  def create_user(:practise, %{"password" => password, "account_type" => acc_type, "auth_email"=> email, "practise_type" => practise_type, "practise_name" => prac_name}) do
     with {:ok, user} <- Accounts.create_user(%{"auth_email"=> email, "password" => password}) do
       # create an account for the user
       account = user
@@ -24,7 +25,7 @@ defmodule Wynix do
         # set the account type
         account_type: acc_type,
         # set the account name, default to the username
-        account_name: user.username,
+        account_holder: user.username,
         # set the auth email as one of the emails for the account
         emails: [user.auth_email],
         # account code
@@ -32,24 +33,26 @@ defmodule Wynix do
       })
       # create the account
       |> Repo.insert!()
-      # preload the user
-      |> Repo.preload([
-        user: from(
-          user in User,
-          select: [user.id, user.token]
-        )
-      ])
+
       # start a task to create the practise
       Supervisor.start_link([
         {Task, fn ->
           # create the practise for the user
-          Skills.create_practise(%{account_id: account.id, practise_type: practise_type})
+          %Skills.Account{id: account.id, account_holder: account.account_holder}
+          # createa new practise struct
+          |> Ecto.build_assoc(:practise, %{
+            practise_name: prac_name,
+            practise_type: practise_type,
+            practise_code: Generator.generate()
+          })
+          # insert into the db
+          |> Repo.insert!()
+
         end}
       ], strategy: :one_for_one)
 
       # return the account
       {:ok, account}
-
     else
       {:error, _changeset} = changeset ->
         # return the changeset
@@ -66,7 +69,7 @@ defmodule Wynix do
         # set the account type
         account_type: acc_type,
         # set the account name, default to the username
-        account_name: user.username,
+        account_holder: user.username,
         # set the auth email as one of the emails for the account
         emails: [user.auth_email],
         # account code
@@ -74,13 +77,6 @@ defmodule Wynix do
       })
       # insert the account to the db
       |> Repo.insert!()
-      # preload the user
-      |> Repo.preload([
-        user: from(
-          user in User,
-          select: [user.id, user.token]
-        )
-      ])
       # preload the practise and the account
       {:ok, account}
     else
@@ -91,27 +87,13 @@ defmodule Wynix do
   end # end of create_user for the client/2
 
   @doc """
-    update practise is used to update information about the practise of a user
-  """
-  def update_practise(type, %Skills.Practise{} = practise, attrs) when is_atom(type) and is_map(attrs) do
-    # check the type and redirect to the correct function
-    case type do
-      :bio ->
-        Skills.update_practise_bio(practise, attrs)
-      :countries ->
-        Skills.update_practise_countries(practise, attrs)
-      :cities ->
-        Skills.update_practise_cities(practise, attrs)
-      :skills ->
-        Skills.update_practise_cities(practise, attrs)
-    end # end of checking the type
-  end # end of the update_practise
-
-  @doc """
     Create order creates an order and creates a new token for the given
   """
-  def create_order(%Accounts.Account{} = owner_account, order_attrs) when is_map(order_attrs) do
-    with {:ok, _order} = changeset <- owner_account |> Ecto.build_assoc(:orders, order_attrs) |> Contracts.create_order() do
+  def create_order(%Accounts.Account{id: id, account_holder: holder} = _owner_account, order_attrs) when is_map(order_attrs) do
+    # add the order owner to the bid_attrs
+    order_attrs = Map.put_new(order_attrs, "order_owner", holder)
+    # create the order
+    with {:ok, _order} = changeset <- %Contracts.Account{id: id} |> Ecto.build_assoc(:orders) |> Contracts.create_order(order_attrs) do
       # return the order
       changeset
     else
@@ -122,23 +104,30 @@ defmodule Wynix do
   @doc """
     Updates the contract
   """
-  def delete_order(%Order{status: status} = order) do
+  def delete_order(order_id) when is_binary(order_id) do
+    # get the order from the dv
+    order = Contracts.get_order!(order_id)
     # check the status of the orde
-    case status do
+    case order.status do
       "In Progress" ->
         # return an error
-        :error
+        {:error, :assigned}
       # the order has not being assigned.
       _ ->
         # start a supervisor for deleting the order
         Supervisor.start_link([
           {Task, fn ->
-            Contracts.delete_order()
+            Contracts.delete_order(order)
           end}
         ], strategy: :one_for_one)
         # return ok
         :ok
     end # end of checking the status
+  # the order could not be found
+  rescue
+    Ecto.NoResultsError ->
+      # return an error with not found notification
+      {:error, :not_found}
   end # end of function for deleting the order
 
   @doc """
@@ -149,30 +138,24 @@ defmodule Wynix do
     order = Contracts.get_order!(order_id)
     # check if the bid is cancelled
     if order.status != "Cancelled" do
-      with {:ok, _bid} = result <- Contracts.create_bid(Map.merger(bid_params, %{"practise_id" => practise_id, "owner_name" => practise_name, "order_id" => order.id})) do
+      with {:ok, _bid} = result <- Contracts.create_bid(Map.merge(bid_params,
+        %{"practise_id" => practise_id, "owner_name" => practise_name, "order_id" => order.id})) do
         # start a supervised task to create a token history of type "Bid token
         Supervisor.start_link([
           {Task, fn ->
-            # get the account for which the practise belongs to
-            practise = from(
-              practise in Practise,
-              where: practise.id == ^practise_id,
-              join: account in assoc(practise, :account),
-              preload: [:account]
-            )
-            # get the practise
-            |> Repo.one()
-
-            # create a token history
-            practise.account
-            # add the account id to the tokens
-            |> Ecto.build_assoc(:tokens, %{
-              order_id: order_id,
-              token_type: "Bid Token",
-              order_code: order.code
-            })
-            # create the token
-            |> Accounts.create_token_history()
+            # get the account
+            account = Skills.get_practise!(practise_id) |> Repo.preload(:account)
+            # create a new token history for the account and reduce the bid tokens of the account by one
+            with {:ok, _token} <- Accounts.create_token_history(%{order_id: order_id, token_type: "Bid Token", account_id: account.id }) do
+              # update the account by reducing the number of bid token
+              account
+              # change the bid-tokens by one
+              |> Ecto.Changeset.change(%{
+                bid_tokens: account.bid_tokens - 1
+              })
+              # update the account
+              |> Repo.update()
+            end # end of with for creating a token
 
           end}
         ], strategy: :one_for_one)
@@ -237,7 +220,7 @@ defmodule Wynix do
     ])
 
     # assign the contract
-    with {:ok, _order} = result <- assign_order(bid.practise, bid.order, bid.id) do
+    with %Order{} = order <- assign_order(bid.practise, bid.order, bid.id) do
       # start a process that accepts the given bid
       Supervisor.start_link([
         {Task, fn ->
@@ -247,7 +230,7 @@ defmodule Wynix do
         end}
       ], strategy: :one_for_one)
       # return the result
-      result
+      {:ok, order}
     end # end of with for assigning the contract
   end # end of the accept_bid function/3
 
@@ -356,7 +339,7 @@ defmodule Wynix do
     |> Map.merge(new_order)
     |> Repo.update()
     # preload the practises
-    |> Repo.prelaod([:practises])
+    |> Repo.preload([:practises])
   end
 
   # send_bid_owner_bid otification

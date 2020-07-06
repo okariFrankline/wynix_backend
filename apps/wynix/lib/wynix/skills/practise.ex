@@ -12,12 +12,12 @@ defmodule Wynix.Skills.Practise do
     field :countries, {:array, :string}
     field :practise_name, :string
     field :practise_code, :string
-    field :practise_type, :string
+    field :practise_type, :string, defaults: "Freelance Practise"
     field :rank, :string
     field :rating, :integer
     field :operate_outside_base_location, :boolean, default: false
     field :skills, {:array, :string}
-    field :professional_level, :string
+    field :professional_level, :string, default: "Amateur"
 
     # relationships
     belongs_to :account, Wynix.Skills.Account
@@ -25,6 +25,10 @@ defmodule Wynix.Skills.Practise do
     timestamps()
   end
 
+  @spec changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def changeset(practise, attrs) do
     practise
@@ -42,6 +46,10 @@ defmodule Wynix.Skills.Practise do
 
   end
 
+  @spec creation_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def creation_changeset(practise, attrs) do
     changeset(practise, attrs)
@@ -49,11 +57,16 @@ defmodule Wynix.Skills.Practise do
     |> validate_required([
       :account_id,
       :practise_type,
+      :practise_name
     ])
     # add the practise code
     |> add_practise_code()
   end # end of creation_changeset/2
 
+  @spec add_cities_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_cities_changeset(practise, attrs) do
     changeset(practise, attrs)
@@ -64,6 +77,10 @@ defmodule Wynix.Skills.Practise do
 
   end # end of the add_city_changeset/2
 
+  @spec update_bio_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def update_bio_changeset(practise, attrs) do
     changeset(practise, attrs)
@@ -72,6 +89,10 @@ defmodule Wynix.Skills.Practise do
     ])
   end # end of the update_bio_changeset/2
 
+  @spec add_countries_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_countries_changeset(practise, attrs) do
     changeset(practise, attrs)
@@ -81,6 +102,10 @@ defmodule Wynix.Skills.Practise do
     |> validate_countries_not_repeated()
   end # end of the add_country_changeset/2
 
+  @spec add_skills_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_skills_changeset(practise, attrs) do
     changeset(practise, attrs)

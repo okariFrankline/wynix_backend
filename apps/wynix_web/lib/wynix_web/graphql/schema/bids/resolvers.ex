@@ -1,6 +1,6 @@
 defmodule WynixWeb.Schema.Bids.Resolver do
   alias Wynix
-  alias Wynix.{Contracts}
+  #alias Wynix.{Contracts}
 
   @doc false
   def place_bid(_parent, %{practise_name: name, practise_id: prac_id, order_id: order_id, input: input}, _resolution) do

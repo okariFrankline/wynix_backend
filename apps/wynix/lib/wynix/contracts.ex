@@ -49,8 +49,8 @@ defmodule Wynix.Contracts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_order(attrs \\ %{}) do
-    %Order{}
+  def create_order(%Order{} = order, attrs \\ %{}) do
+    order
     |> Order.creation_changeset(attrs)
     |> Repo.insert()
   end

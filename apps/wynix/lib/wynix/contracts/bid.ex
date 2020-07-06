@@ -17,6 +17,10 @@ defmodule Wynix.Contracts.Bid do
     timestamps()
   end
 
+  @spec changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def changeset(bid, attrs) do
     bid
@@ -30,15 +34,13 @@ defmodule Wynix.Contracts.Bid do
     ])
   end
 
+  @spec creation_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def creation_changeset(bid, attrs) do
-    bid
-    |> cast(attrs, [
-      :deposit_amount,
-      :asking_amount,
-      :status,
-      :owner_name
-    ])
+    changeset(bid, attrs)
     |> validate_required([
       :deposit_amount,
       :asking_amount,

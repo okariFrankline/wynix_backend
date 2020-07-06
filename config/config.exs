@@ -33,6 +33,26 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+config :wynix_web, WynixWeb.Authentication.Guardian,
+  # optional
+  allowed_algos: ["ES512"],
+  # optional
+  verify_module: Guardian.JWT,
+  issuer: "Ejob",
+  ttl: {30, :days},
+  allowed_drift: 2000,
+  # optional
+  verify_issuer: true,
+  # generated using: JOSE.JWS.generate_key(%{"alg" => "ES512"}) |> JOSE.JWK.to_map |> elem(1)
+  secret_key: %{
+    "crv" => "P-521",
+    "d" => "AYRmr07ucv_9cEsxpQBFgIiJM9-SR9sK4seFqCmu5ZNVP7WJa6_6Evg_h6YDq42V2tw_fTJ8ZxUWooUbToLvKpdp",
+    "kty" => "EC",
+    "x" => "AFJpzJdjImNkcSjmTsVYjS5KbTQqWIC4mtIYS-vCl4nkwXPQgMumMOdLlxEO_pW8RNOecZSSB_gqmtXk2xgqLgAi",
+    "y" => "AA3FVnldZYI2NynHfzRcE-YqFxhHbab1VV8B2f9odZik7UWBwLkBcUACObVMV0EuzuLmt3DggyPyNwUQPqdPaG5p"
+  },
+  serializer: WynixWeb.Authentication.Guardian
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

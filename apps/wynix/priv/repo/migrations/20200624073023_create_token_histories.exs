@@ -15,11 +15,11 @@ defmodule Wynix.Repo.Migrations.CreateTokenHistories do
     # index on the account id
     create index(:token_histories, [:account_id])
     # index for the token code
-    create uniqe_index(:token_histories, [:token_code])
+    create unique_index(:token_histories, [:token_code])
     # index on the inserted at
     create index(:token_histories, [:inserted_at])
     # index for the account id
-    create index(:account_id, [:account_id])
+    #create index(:token_histories, [:account_id])
 
   end
 

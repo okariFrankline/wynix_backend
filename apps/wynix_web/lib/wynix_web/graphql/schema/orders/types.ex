@@ -20,16 +20,16 @@ defmodule WynixWeb.Schema.Types.Orders do
     field :payment_at, :string
     field :proposal_required, :boolean
     field :status, :string
-    field :practise, list_of(:practise)
+    field :practise, list_of(:order_practise)
   end # end of order
 
-  object :practise do
+  object :order_practise do
     field :id, non_null(:id)
-    field :practise_name, non_null(:practise_name)
+    field :practise_name, non_null(:string)
   end # end of practise
 
   # bid object
-  object :bid do
+  object :order_bid do
     field :id, non_null(:id)
     field :asking_amount, non_null(:decimal)
     field :deposit_amount, :decimal
@@ -38,13 +38,13 @@ defmodule WynixWeb.Schema.Types.Orders do
   end # end of bid object
 
   # order input
-  object :order_input do
+  input_object :order_input do
     field :order_type, non_null(:string)
     field :order_category, non_null(:string)
   end # end of order input
 
   # order details input
-  object :order_details_input do
+  input_object :order_details_input do
     field :proposal_required, non_null(:boolean)
     field :contractors_needed, non_null(:integer)
     field :order_length, non_null(:string)
@@ -52,7 +52,7 @@ defmodule WynixWeb.Schema.Types.Orders do
   end # end of the order_details_input
 
   # order payment info
-  object :order_payment do
+  input_object :order_payment_input do
     field :payment_at, non_null(:string)
     field :payable_amount, non_null(:decimal)
     field :currency, non_null(:string)
@@ -77,7 +77,7 @@ defmodule WynixWeb.Schema.Types.Orders do
   end # end of delete result
 
   # orders queries
-  object :orders_queries do
+  object :order_queries do
     @desc "Get order returns an order specified by a given id"
     field :get_order, non_null(:order_result) do
       arg :order_id, non_null(:id)
@@ -86,17 +86,18 @@ defmodule WynixWeb.Schema.Types.Orders do
     end # end of get_order
 
     @desc "Get Order bids returns the bids for a given order"
-    field :get_order_bids, non_null(list_of(:bid)) do
+    field :get_order_bids, non_null(list_of(:order_bid)) do
       arg :order_id, non_null(:id)
 
       resolve(&Resolver.get_order_bids/3)
     end # end of get_order_bids
 
-    @desc "Get Order proposal returns the proposals for a given order"
-    field :get_order_bids, non_null(list_of(:proposal)) do
-      arg :order_id, non_null(:id)
+    # @desc "Get Order proposal returns the proposals for a given order"
+    # field :get_order_bids, non_null(list_of(:proposal)) do
+    #   arg :order_id, non_null(:id)
 
-      resolve(&Resolver.get_order_proposal/3)
+    #   resolve(&Resolver.get_order_proposal/3)
+    # end
   end # end of the orders_queries
 
   # orders mutations
@@ -141,8 +142,8 @@ defmodule WynixWeb.Schema.Types.Orders do
     end # end of update order description
 
     @desc "Delete order deletes an order and returns a confirmation message"
-    field :delete_order, non_null(:delete_error) do
-      field :order_id, non_null(:id)
+    field :delete_order, non_null(:delete_result) do
+      arg :order_id, non_null(:id)
 
       resolve(&Resolver.delete_order/3)
     end # end of delete order
@@ -160,4 +161,5 @@ defmodule WynixWeb.Schema.Types.Orders do
     end # end of the accept_bid
 
   end # end of the orders_mutations
+
 end # end of the orders type module

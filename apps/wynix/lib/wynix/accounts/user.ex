@@ -3,28 +3,33 @@ defmodule Wynix.Accounts.User do
   import Ecto.Changeset
 
   alias Wynix.Utils.Validations
-  alias Wynix.Accounts.Account
+  alias Wynix.Accounts.{Account, Session}
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "users" do
-    field :account_type, :string
     field :auth_email, :string
+    # indeicates whether the user is active or not
     field :is_active, :boolean, default: false
-    field :is_suspended, :boolean, default: false
+    # hshed password that is stored in the db
     field :password_hash, :string
     # holds the new password during user creation and password changing processes
     field :password, :string, virtual: true
     # holds the current password during the password changing process
     field :current_password, :string, virtual: true
-    field :token, :string
     field :username, :string
-
     # relationships
     has_one :account, Account
+    # has many sessions that are running
+    has_many :sessions, Session
+
     timestamps()
   end
 
+  @spec changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def changeset(user, attrs) do
     user
@@ -33,21 +38,22 @@ defmodule Wynix.Accounts.User do
       :auth_email,
       :password_hash,
       :is_active,
-      :account_type,
-      :token
     ])
   end # end of the changeset
 
+  @spec creation_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def creation_changeset(user, attrs) do
     changeset(user, attrs)
     |> cast(attrs, [
-      :current_password
+      :password
     ])
     # ensure the fields are given
     |> validate_required([
       :auth_email,
-      :account_type,
       :password
     ])
     # validate the format of the email
@@ -64,16 +70,20 @@ defmodule Wynix.Accounts.User do
     |> unique_constraint(:auth_email, message: "The email address #{attrs["auth_email"]} is already taken.")
   end # end of the creation changeset
 
+  @spec email_change_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def email_change_changeset(user, attrs) do
     changeset(user, attrs)
     |> cast(attrs, [
-      :password
+      :current_password
     ])
     # ensure email is given
     |> validate_required([
-      :auth_email
-      :password
+      :auth_email,
+      :current_password
     ])
     # validate the email format
     |> Validations.validate_email_format()
@@ -89,16 +99,22 @@ defmodule Wynix.Accounts.User do
     ])
   end # end of the email change changeset
 
+  @spec password_change_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: any
   @doc false
   def password_change_changeset(user, attrs) do
     changeset(user, attrs)
     #cast the password
     |> cast(attrs, [
-      :password
+      :password,
+      :current_password
     ])
     # ensure the new password is given
     |> validate_required([
-      :password
+      :password,
+      :current_password
     ])
     # ensure the password has a minimum of 8 characters
     |> validate_length(:password, [
@@ -146,7 +162,7 @@ defmodule Wynix.Accounts.User do
 
   #  Valite new not equal to current email compares the new email entered and the current email in use and
   #  ensures that they are not similar
-  defp validate_new_not_equal_to_current_email(%Ecto.Changeset{valid?: true, changes: %{auth_email: email}, data: %__MODULE__{email: current_email}} = changeset)do
+  defp validate_new_not_equal_to_current_email(%Ecto.Changeset{valid?: true, changes: %{auth_email: email}, data: %__MODULE__{auth_email: current_email}} = changeset)do
     if email === current_email do
       # add error on the password
       changeset |> add_error(:auth_email, "Failed. The new email entered and the current email in use are similar.")

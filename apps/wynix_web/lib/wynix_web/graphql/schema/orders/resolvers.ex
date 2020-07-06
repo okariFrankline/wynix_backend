@@ -3,7 +3,7 @@ defmodule WynixWeb.Schema.Orders.Resolver do
     Defines resolver functions for the Account types
   """
   alias Wynix
-  alias Wynix.{Contracts, Repo}
+  alias Wynix.{Contracts}
 
   @doc false
   def get_order(_parent, args, _resolution) do

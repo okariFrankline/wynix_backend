@@ -1,6 +1,7 @@
 defmodule WynixWeb.Schema.Types.Practise do
   use Absinthe.Schema.Notation
 
+  alias WynixWeb.Schema.Practise.Resolver
   # practise object
   object :practise do
     field :id, non_null(:id)
@@ -18,7 +19,7 @@ defmodule WynixWeb.Schema.Types.Practise do
   end # end of practise
 
   # bid object
-  object :bid do
+  object :practise_bid do
     field :id, non_null(:id)
     field :asking_amount, non_null(:decimal)
     field :deposit_amount, :decimal
@@ -39,24 +40,24 @@ defmodule WynixWeb.Schema.Types.Practise do
   end # end of practise result
 
   # practise input object
-  object :practise_input do
+  input_object :practise_input do
     field :practise_name, non_null(:string)
     field :professional_level, non_null(:string)
     field :operate_outside_base_location, non_null(:boolean)
   end # end practise input
 
   # input for the cities
-  object :cities_input do
+  input_object :cities_input do
     field :cities, non_null(list_of(non_null(:string)))
   end # end of cities input
 
   # input for the countries
-  object :countries_input do
+  input_object :countries_input do
     field :countries, non_null(list_of(non_null(:string)))
   end # end of cities input
 
   # input for the skills
-  object :skills_input do
+  input_object :skills_input do
     field :skills, non_null(list_of(non_null(:string)))
   end # end of cities input
 
@@ -71,11 +72,11 @@ defmodule WynixWeb.Schema.Types.Practise do
     field :get_practise, non_null(:practise_result) do
       arg :practise_id, non_null(:id)
 
-      resolve(&Resolver.get-practise/3)
+      resolve(&Resolver.get_practise/3)
     end # end of gt practise
 
     @desc "Get practise bids returns all the bids for a given bid"
-    field :get_practise_bids, non_null(list_of(:bid)) do
+    field :get_practise_bids, non_null(list_of(:practise_bid)) do
       arg :practise_id, non_null(:id)
 
       resolve(&Resolver.get_practise_bids/3)
@@ -95,7 +96,7 @@ defmodule WynixWeb.Schema.Types.Practise do
     @desc "Update cities updates the given practise's areas of operation"
     field :update_cities, non_null(:practise_result) do
       arg :practise_id, non_null(:id)
-      arg :input, non_null(:citiesinput)
+      arg :input, non_null(:cities_input)
 
       resolve(&Resolver.add_cities/3)
     end # end of update cities

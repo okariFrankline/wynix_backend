@@ -49,7 +49,7 @@ defmodule WynixWeb.Schema.Types.Accounts do
   object :account_result do
     field :account, non_null(:account)
     # errors
-    field :errors, list_of_errors(:account_error)
+    field :errors, list_of(:account_error)
   end # end of account result
 
 

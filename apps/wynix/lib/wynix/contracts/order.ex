@@ -16,12 +16,13 @@ defmodule Wynix.Contracts.Order do
     field :order_code, :string
     field :order_length, :string
     field :order_type, :string
+    field :order_owner, :string
     field :payable_amount, :string
     field :payment_at, :string
     field :proposal_required, :boolean, default: false
     field :status, :string, default: "Unpublished"
     # owner
-    belongs_to :account, Wynix.Contracts.Order
+    belongs_to :account, Wynix.Contracts.Account
     # assignee
     has_many :practise, Wynix.Contracts.Order
     # bids
@@ -30,10 +31,15 @@ defmodule Wynix.Contracts.Order do
     timestamps()
   end
 
+  @spec changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def changeset(order, attrs) do
     order
     |> cast(attrs, [
+      :order_owner,
       :order_code,
       :order_category,
       :order_type,
@@ -54,12 +60,17 @@ defmodule Wynix.Contracts.Order do
     |> validate_required([
       :order_category,
       :order_type,
-      :account_id
+      :account_id,
+      :order_owner,
     ])
     |> add_order_code()
     |> foreign_key_constraint(:account_id)
   end # end of creation_changeset/2
 
+  @spec update_description_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def update_description_changeset(order, attrs) do
     changeset(order, attrs)
@@ -68,6 +79,10 @@ defmodule Wynix.Contracts.Order do
     ])
   end # end of update_bio_changeset/2
 
+  @spec add_payment_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_payment_changeset(order, attrs) do
     changeset(order, attrs)
@@ -78,6 +93,10 @@ defmodule Wynix.Contracts.Order do
     |> add_payable_amount()
   end
 
+  @spec add_service_changeset(
+          {map, map} | %{:__struct__ => atom | %{__changeset__: map}, optional(atom) => any},
+          :invalid | %{optional(:__struct__) => none, optional(atom | binary) => any}
+        ) :: Ecto.Changeset.t()
   @doc false
   def add_service_changeset(order, attrs) do
     changeset(order, attrs)

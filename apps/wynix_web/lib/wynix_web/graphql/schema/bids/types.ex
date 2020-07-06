@@ -26,13 +26,13 @@ defmodule WynixWeb.Schema.Types.Bids do
   end # end of the bid_result
 
   # input for creating a bid
-  object_input :bid_input do
+  input_object :bid_input do
     field :asking_amount, non_null(:decimal)
     field :deposit_amount, non_null(:decimal)
   end # end of the bid input
 
   # bid result
-  object :bid_succes_result do
+  object :bid_success_result do
     field :message, non_null(:string)
   end # end of bid result
 
@@ -49,7 +49,7 @@ defmodule WynixWeb.Schema.Types.Bids do
     end # end of place bid
 
     @desc "Reject bid rejects a bid and returns ok"
-    field :reject_bid, non_null(:bid_success_message) do
+    field :reject_bid, non_null(:bid_success_result) do
       arg :bid_id, non_null(:id)
 
       resolve(&Resolver.reject_bid/3)

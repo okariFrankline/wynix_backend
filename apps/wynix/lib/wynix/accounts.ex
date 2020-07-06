@@ -6,7 +6,14 @@ defmodule Wynix.Accounts do
   import Ecto.Query, warn: false
   alias Wynix.Repo
 
-  alias Wynix.Accounts.User
+  alias Wynix.Accounts.{User, Session}
+
+  # function for creating a new session
+  def create_session(attrs \\ %{}) do
+    %Session{}
+    |> Session.changeset(attrs)
+    |> Repo.insert()
+  end
 
   @doc false
   def preload_user(:practise, %User{} = user) do

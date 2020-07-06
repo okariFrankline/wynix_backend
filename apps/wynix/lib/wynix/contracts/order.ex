@@ -107,9 +107,13 @@ defmodule Wynix.Contracts.Order do
   end # end of add_service_changeset/2
 
   # add order code adds the order code to the order
-  defp add_order_code(%Ecto.Changeset{valid?: true} = changeset) do
-    changeset
-    |> put_change(:order_code, Generator.generate())
+  defp add_order_code(%Ecto.Changeset{valid?: true, changes: %{order_type: type}} = changeset) do
+    if type == "Order" do
+      changeset |> put_change(:order_code, "order-#{Generator.generate()}")
+    else
+      # order is a quoation request
+      changeset |> put_change(:order_code, "quot-#{Generator.generate()}")
+    end # end of if
   end # end of add_order_code/1
   defp add_order_code(changeset), do: changeset
 

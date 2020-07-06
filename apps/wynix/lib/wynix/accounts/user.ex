@@ -94,9 +94,9 @@ defmodule Wynix.Accounts.User do
     # ensure the new email is not similar to the current email in use
     |> validate_new_not_equal_to_current_email()
     # ensure the emailis unique
-    |> unique_constraint(:auth_email, [
-      message: "Failed. The email address #{attrs["emal"]} has been taken."
-    ])
+    |> unique_constraint(:auth_email,
+      [message: "Failed. The email address #{attrs["emal"]} has been taken."]
+    )
   end # end of the email change changeset
 
   @spec password_change_changeset(

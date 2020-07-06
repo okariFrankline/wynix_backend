@@ -105,7 +105,7 @@ defmodule Wynix.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_user_email(%User{} = user, attrs) do
+  def update_user_auth_email(%User{} = user, attrs) do
     user
     |> User.email_change_changeset(attrs)
     |> Repo.update()
@@ -123,7 +123,7 @@ defmodule Wynix.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_user_password(%User{} = user, attrs) do
+  def update_user_auth_password(%User{} = user, attrs) do
     user
     |> User.password_change_changeset(attrs)
     |> Repo.update()

@@ -2,11 +2,11 @@ defmodule Wynix.Data do
 
   def practise_account do
     %{
-      "auth_email" => "okaripaul@gmail.com",
-      "password" => "okari5678",
-      "account_type" => "practise Account",
-      "practise_type" => "Freelance Account",
-      "practise_name" => "Frank's Practise"
+      auth_email: "okaripauloumo@gmail.com",
+      password: "okari5678",
+      account_type: "practise Account",
+      practise_type: "Freelance Account",
+      practise_name: "Frank's Practise"
     }
   end
 

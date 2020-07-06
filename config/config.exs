@@ -13,6 +13,9 @@ use Mix.Config
 config :wynix,
   ecto_repos: [Wynix.Repo]
 
+config :wynix, Wynix.Repo,
+  ownership_timeout: 60_000
+
 config :wynix_web,
   ecto_repos: [Wynix.Repo],
   generators: [context_app: :wynix, binary_id: true]

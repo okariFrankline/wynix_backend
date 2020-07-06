@@ -7,6 +7,9 @@ config :wynix, Wynix.Repo,
   database: "wynix_app",
   hostname: "localhost",
   show_sensitive_data_on_connection_error: true,
+  ownership_timeout: 60_000,
+  timeout: 60_000,
+  #pool_timeout: 60_000,
   pool_size: 10
 
 # For development, we disable any cache and enable

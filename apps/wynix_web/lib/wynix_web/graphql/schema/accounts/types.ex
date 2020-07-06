@@ -7,13 +7,14 @@ defmodule WynixWeb.Schema.Types.Accounts do
 
   # account
   object :account do
+    field :id, non_null(:id)
     field :account_code, non_null(:string)
     # account type
     field :account_type, non_null(:string)
     # is suspended
     field :is_suspended, non_null(:boolean)
     # full name of the name
-    field :account_name, non_null(:string)
+    field :account_holder, non_null(:string)
 
     # payment information
     field :mpesa_number, :string
@@ -47,18 +48,31 @@ defmodule WynixWeb.Schema.Types.Accounts do
 
   # account result
   object :account_result do
-    field :account, non_null(:account)
+    field :account, :account
     # errors
     field :errors, list_of(:account_error)
   end # end of account result
 
+  # session result
+  object :session_result do
+    field :token, :string
+    field :errors, list_of(:account_error)
+  end # end of session result
 
   # account creation input
-  input_object :account_input do
-    field :email, non_null(:string)
+  input_object :practise_account_input do
+    field :auth_email, non_null(:string)
     field :password, non_null(:string)
     field :account_type, (non_null(:string))
-    field :practise_type, :string
+    field :practise_type, non_null(:string)
+    field :practise_name, non_null(:string)
+  end # end of input object for the account
+
+  # account creation input
+  input_object :client_account_input do
+    field :auth_email, non_null(:string)
+    field :password, non_null(:string)
+    field :account_type, (non_null(:string))
   end # end of input object for the account
 
   # input for adding the bank account
@@ -87,6 +101,12 @@ defmodule WynixWeb.Schema.Types.Accounts do
     field :password, non_null(:string)
   end # end of email auth_input
 
+  # input object for the session
+  input_object :session_input do
+    field :email, non_null(:string)
+    field :password, non_null(:string)
+  end # end of the session input
+
   #queries
   object :account_queries do
     @desc "Get account returns the account details specified by a given id"
@@ -95,16 +115,28 @@ defmodule WynixWeb.Schema.Types.Accounts do
 
       resolve(&Resolver.get_account/3)
     end # end of get user
+
+    @desc "Get my account returns the currently logged in user's account"
+    field :get_my_account, non_null(:account_result) do
+      resolve(&Resolver.my_account/3)
+    end# end of get_my_account
   end # end of the account queries
 
   # mutations
   object :account_mutations do
-    @desc "Create account creates an account for a new user and return the account"
-    field :create_account, non_null(:account_result) do
-      arg :input, non_null(:account_input)
+    @desc "Create practise account creates a practise account for a new user and return the account"
+    field :create_practise_account, non_null(:account_result) do
+      arg :input, non_null(:practise_account_input)
 
-      resolve(&Resolver.create_account/3)
-    end
+      resolve(&Resolver.create_practise_account/3)
+    end # end of create practise account
+
+    @desc "Create client account creates a client account for a new user and return the account"
+    field :create_client_account, non_null(:account_result) do
+      arg :input, non_null(:client_account_input)
+
+      resolve(&Resolver.create_client_account/3)
+    end # end of create practise account
 
     @desc "Update Location updates the location of an account and returns the account"
     field :update_location, non_null(:account_result) do
@@ -147,15 +179,22 @@ defmodule WynixWeb.Schema.Types.Accounts do
     field :update_auth_email, non_null(:account_result) do
       arg :input, non_null(:email_auth_input)
 
-      resolve(&Resolver.update_auth_email/3)
+      resolve(&Resolver.update_user_auth_email/3)
     end # end of update_auth_email
 
     @desc "Updates the auth password of the current account and returns the account"
     field :update_auth_password, non_null(:account_result) do
       arg :input, non_null(:password_auth_input)
 
-      resolve(&Resolver.update_auth_password/3)
+      resolve(&Resolver.update_user_auth_password/3)
     end # end of update_auth_password
+
+    @desc "Create session logs in the user."
+    field :create_session, non_null(:session_result) do
+      arg :input, non_null(:session_input)
+
+      resolve(&Resolver.create_session/3)
+    end # end of create session
   end # end of the account mutations
 
 

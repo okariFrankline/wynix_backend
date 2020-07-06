@@ -12,5 +12,7 @@ defmodule Wynix.Contracts.Practise do
 
     # can have many bids
     has_many :bids, Wynix.Contracts.Bid
+    # belong to one order
+    belongs_to :order, Wynix.Contracts.Order
   end # end of the practises schema
 end # end of the assignee module

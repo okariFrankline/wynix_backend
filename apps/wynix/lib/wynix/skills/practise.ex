@@ -14,7 +14,7 @@ defmodule Wynix.Skills.Practise do
     field :practise_code, :string
     field :practise_type, :string, defaults: "Freelance Practise"
     field :rank, :string
-    field :rating, :integer
+    field :rating, :float
     field :operate_outside_base_location, :boolean, default: false
     field :skills, {:array, :string}
     field :professional_level, :string, default: "Amateur"

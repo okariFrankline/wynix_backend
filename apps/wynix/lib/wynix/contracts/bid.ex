@@ -2,12 +2,15 @@ defmodule Wynix.Contracts.Bid do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Wynix.Utils.Generator
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "bids" do
     field :asking_amount, :float
     field :deposit_amount, :float, default: 0.0
     field :owner_name, :string
+    field :bid_code, :string
     field :status, :string, default: "Pending"
     # bid for
     belongs_to :order, Wynix.Contracts.Order
@@ -48,6 +51,14 @@ defmodule Wynix.Contracts.Bid do
       :order_id,
       :practise_id
     ])
+    |> insert_code()
   end # end of the creation_changeset
+
+  defp insert_code(%Ecto.Changeset{valid?: true} = changeset) do
+    changeset
+    |> put_change(:bid_code, "bid-#{Generator.generate()}")
+  end # end of insert_code
+  # caled if the changeset is not valid
+  defp insert_code(changeset), do: changeset
 
 end # end of Bid module

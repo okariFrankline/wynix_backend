@@ -7,7 +7,7 @@ defmodule Wynix do
   if it comes from the database, an external API or others.
   """
   alias Wynix.{Accounts, Skills, Contracts, Repo}
-  alias Wynix.Contracts.{Bid, Order, Practise}
+  alias Wynix.Contracts.{Bid, Order}
   #alias Wynix.Accounts.{User, Account}
   alias Wynix.Utils.{Generator}
   import Ecto.Query
@@ -138,15 +138,20 @@ defmodule Wynix do
     order = Contracts.get_order!(order_id)
     # check if the bid is cancelled
     if order.status != "Cancelled" do
+      # start task for getting the practise
+      practise_task = Task.async(fn -> Skills.get_practise!(practise_id) |> Repo.preload([:account]) end)
+      # creat the bid
       with {:ok, _bid} = result <- Contracts.create_bid(Map.merge(bid_params,
         %{"practise_id" => practise_id, "owner_name" => practise_name, "order_id" => order.id})) do
+        # get the account
+        account = Task.await(practise_task).account.id |> Accounts.get_account!()
         # start a supervised task to create a token history of type "Bid token
         Supervisor.start_link([
           {Task, fn ->
-            # get the account
-            account = Skills.get_practise!(practise_id) |> Repo.preload(:account)
             # create a new token history for the account and reduce the bid tokens of the account by one
-            with {:ok, _token} <- Accounts.create_token_history(%{order_id: order_id, token_type: "Bid Token", account_id: account.id }) do
+            token_map = %{order_code: order.order_code, token_type: "Bid Token", token_code: "token-#{Generator.generate()}"}
+            # create the token history for the account
+            with _token <- account |> Ecto.build_assoc(:token_histories, token_map) |> Repo.insert!() do
               # update the account by reducing the number of bid token
               account
               # change the bid-tokens by one
@@ -154,9 +159,8 @@ defmodule Wynix do
                 bid_tokens: account.bid_tokens - 1
               })
               # update the account
-              |> Repo.update()
+              |> Repo.update!()
             end # end of with for creating a token
-
           end}
         ], strategy: :one_for_one)
         # return response
@@ -165,7 +169,6 @@ defmodule Wynix do
     else
       {:error, :cancelled_order}
     end # end of checking if the order is cancelled
-
   end # end of create_bid/3
 
   @doc """
@@ -211,22 +214,17 @@ defmodule Wynix do
     Accepts a bid
   """
   def accept_bid(bid_id) when is_binary(bid_id) do
-    # get the order
-    bid = Contracts.get_order!(bid_id) |> Repo.preload([
-      # load only the id of the practise
-      practise: from(practise in Practise, select: [practise.id]),
-      # load on the contractors needed and the id
-      order: from(order in Order, select: [order.contractors_needed, order.id])
-    ])
+    # get the order and preload the practise and order
+    bid = Contracts.get_bid!(bid_id) |> Repo.preload([:order, :practise])
 
     # assign the contract
-    with %Order{} = order <- assign_order(bid.practise, bid.order, bid.id) do
+    with {:ok, order} <- assign_order(bid.order, bid.practise, bid.id) do
       # start a process that accepts the given bid
       Supervisor.start_link([
         {Task, fn ->
           Contracts.update_bid(bid, %{status: "Accepted"})
           # send a notification to the owner of the bid
-          send_bid_owner_notification(bid.practise_id, :accepted)
+          #send_bid_owner_notification(bid.practise_id, :accepted)
         end}
       ], strategy: :one_for_one)
       # return the result
@@ -288,59 +286,49 @@ defmodule Wynix do
   end # end of get_bids_for_order/1
 
 
-  defp assign_order(%Practise{} = practise, %Order{contractors_needed: number} = order, bid_id) when number - 1 == 0 do
+  defp assign_order(%Order{contractors_needed: number} = order, %Contracts.Practise{} = practise, bid_id) when number - 1 == 0 do
     # start a supervised process for rejecting each of the bids
     Supervisor.start_link([
       {Task, fn ->
         # preload all the bids
-        bids = order |> Repo.preload([
-          bids: from(
-            bid in Bid,
-            where: bid.id != ^bid_id,
-            where: bid.status == "Pending"
-          )
-        ])
+        bids = Repo.preload(order, [:bids]).bids
         # for each of the bids, reject them    has_many :orders, Wynix.Contracts.Order
-        Stream.each(bids, fn bid ->
+        Enum.each(bids, fn bid ->
           # for each of the bids in the list start a supervised process to reject the orders
           Supervisor.start_link([
             {Task, fn ->
-              Contracts.update_bid(bid, %{status: "Rejected."})
+              if bid.id !== bid_id && bid.status === "Pending" do
+                # only reject the bid if it is not the one
+                bid |> Ecto.Changeset.change(%{status: "Rejected"}) |> Repo.update!()
+              end
               # send a notification to the owner of the bid
             end} # end of the task for rejecting a given bid
           ], strategy: :one_for_one)
-          |> Stream.run()
         end) # end of the stream function
       end} # end of the task for rejecting all the bids
     ], strategy: :one_for_one)
 
-    # return the changeset
-    practise
-    # add the practise id and update the status and the number of contractors needed
-    |> Ecto.build_assoc(:orders, %{
-      status: "Assigned",
-      contractors_needed: 0
-    })
-    |> merge_and_update_orders(order)
+    # update the practise to include the order_id
+    with order <- order |> Ecto.Changeset.change(%{status: "Assigned", contractors_needed: 0}) |> Repo.update!(),
+      _practise <- practise |> Ecto.Changeset.change(%{order_id: order.id}) |> Repo.update!() do
+        # preload the practises
+        order = order |> Repo.preload([:practises])
+        # return the order
+        {:ok, order}
+    end # end of updating the order
   end # end of assign order
 
-  defp assign_order(%Practise{} = practise, %Order{} = order, _bid_id) do
-    practise
-    # add the build_assoc
-    |> Ecto.build_assoc(:orders, %{
-      contractors_needed: order.number - 1
-    })
-    |> merge_and_update_orders(order)
+  defp assign_order(%Order{} = order, %Contracts.Practise{} = practise, _bid_id) do
+    # update the practise to include the order_id
+    with order <- order |> Ecto.Changeset.change(%{contractors_needed: order.contractors_needed - 1}) |> Repo.update!(),
+      # update the practise by adding the order_id.
+      _practise <- practise |> Ecto.Changeset.change(%{order_id: order.id}) |> Repo.update!() do
+        # preload the practises
+          order = order |> Repo.preload([:practises])
+          # return the order
+          {:ok, order}
+    end # end of updating the order
   end # end of assign order
-
-  # function for updating the merge_and_update_orders
-  defp merge_and_update_orders(new_order, old_order) do
-    old_order
-    |> Map.merge(new_order)
-    |> Repo.update()
-    # preload the practises
-    |> Repo.preload([:practises])
-  end
 
   # send_bid_owner_bid otification
   def send_bid_owner_notification(_practise_id, reason) do

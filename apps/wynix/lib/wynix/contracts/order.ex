@@ -24,7 +24,7 @@ defmodule Wynix.Contracts.Order do
     # owner
     belongs_to :account, Wynix.Contracts.Account
     # assignee
-    has_many :practise, Wynix.Contracts.Order
+    has_many :practises, Wynix.Contracts.Practise
     # bids
     has_many :bids, Wynix.Contracts.Bid
 

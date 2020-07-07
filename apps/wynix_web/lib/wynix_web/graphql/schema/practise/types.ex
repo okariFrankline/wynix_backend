@@ -1,5 +1,7 @@
 defmodule WynixWeb.Schema.Types.Practise do
   use Absinthe.Schema.Notation
+  # alias the isLoggedin middleware
+  alias WynixWeb.Schema.Middlewares.IsLoggedIn
 
   alias WynixWeb.Schema.Practise.Resolver
   # practise object
@@ -12,17 +14,19 @@ defmodule WynixWeb.Schema.Types.Practise do
     field :practise_code, non_null(:string)
     field :practise_type, non_null(:string)
     field :rank, non_null(:string)
-    field :rating, :integer
+    field :rating, :float
     field :operate_outside_base_location, non_null(:string)
     field :skills, non_null(list_of(:string))
     field :professional_level, :string
+
+    field :bids, non_null(list_of(:practise_bid))
   end # end of practise
 
   # bid object
   object :practise_bid do
     field :id, non_null(:id)
     field :asking_amount, non_null(:decimal)
-    field :deposit_amount, :decimal
+    field :deposit_amount, :float
     field :status, non_null(:string)
     field :order_id, non_null(:id)
   end # end of bid object
@@ -72,13 +76,17 @@ defmodule WynixWeb.Schema.Types.Practise do
     field :get_practise, non_null(:practise_result) do
       arg :practise_id, non_null(:id)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.get_practise/3)
     end # end of gt practise
 
     @desc "Get practise bids returns all the bids for a given bid"
-    field :get_practise_bids, non_null(list_of(:practise_bid)) do
+    field :get_practise_bids, non_null(:practise_result) do
       arg :practise_id, non_null(:id)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.get_practise_bids/3)
     end # end of get bids for practise
   end # end of object queries
@@ -90,6 +98,8 @@ defmodule WynixWeb.Schema.Types.Practise do
       arg :practise_id, non_null(:id)
       arg :input, non_null(:practise_input)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_practise/3)
     end # end of update practise
 
@@ -98,6 +108,8 @@ defmodule WynixWeb.Schema.Types.Practise do
       arg :practise_id, non_null(:id)
       arg :input, non_null(:cities_input)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.add_cities/3)
     end # end of update cities
 
@@ -106,6 +118,8 @@ defmodule WynixWeb.Schema.Types.Practise do
       arg :practise_id, non_null(:id)
       arg :input, non_null(:countries_input)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.add_countries/3)
     end # end of update countries
 
@@ -114,6 +128,8 @@ defmodule WynixWeb.Schema.Types.Practise do
         arg :practise_id, non_null(:id)
         arg :input, non_null(:skills_input)
 
+        # ensure the user is logged in
+        middleware(IsLoggedIn)
         resolve(&Resolver.add_skills/3)
     end # end of update_skills
   end # end of the practise mutations

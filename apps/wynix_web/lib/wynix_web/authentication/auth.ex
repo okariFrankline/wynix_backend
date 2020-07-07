@@ -18,7 +18,7 @@ defmodule WynixWeb.Authentication.Auth do
     def create_token(user) do
         # create a session for the iser
         # encode and sign the user and create a new session for the user
-        with {:ok, jwt, _claims} <- Guardian.encode_and_sign(user), {:ok, _} <- user |> Ecto.build_assoc(:sessions, %{token: jwt}) |> Accounts.get_session() do
+        with {:ok, jwt, _claims} <- Guardian.encode_and_sign(user), {:ok, _} <- user |> Ecto.build_assoc(:sessions, %{token: jwt}) |> Accounts.create_session() do
             # return the token
             {:ok, jwt}
         end # end of with for encoding and signing the token

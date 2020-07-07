@@ -9,8 +9,8 @@ defmodule Wynix.Accounts do
   alias Wynix.Accounts.{User, Session}
 
   # function for creating a new session
-  def create_session(attrs \\ %{}) do
-    %Session{}
+  def create_session(%Session{} = session, attrs \\ %{}) do
+    session
     |> Session.changeset(attrs)
     |> Repo.insert()
   end

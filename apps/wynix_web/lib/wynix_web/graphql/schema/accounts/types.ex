@@ -4,6 +4,8 @@ defmodule WynixWeb.Schema.Types.Accounts do
   """
   use Absinthe.Schema.Notation
   alias WynixWeb.Schema.Accounts.Resolver
+  # alias the isLoggedin middleware
+  alias WynixWeb.Schema.Middlewares.IsLoggedIn
 
   # account
   object :account do
@@ -77,7 +79,7 @@ defmodule WynixWeb.Schema.Types.Accounts do
 
   # input for adding the bank account
   input_object :banking_input do
-    field :bank_account, non_null(:string)
+    field :bank_name, non_null(:string)
     field :bank_branch, non_null(:string)
     field :account_number, non_null(:string)
   end # end of the banking info input
@@ -86,7 +88,7 @@ defmodule WynixWeb.Schema.Types.Accounts do
   input_object :location_input do
     field :country, non_null(:string)
     field :city, non_null(:string)
-    field :physical_addres, non_null(:string)
+    field :physical_address, :string
   end # end of the location input
 
   # email auth input object
@@ -103,7 +105,7 @@ defmodule WynixWeb.Schema.Types.Accounts do
 
   # input object for the session
   input_object :session_input do
-    field :email, non_null(:string)
+    field :auth_email, non_null(:string)
     field :password, non_null(:string)
   end # end of the session input
 
@@ -113,11 +115,16 @@ defmodule WynixWeb.Schema.Types.Accounts do
     field :get_account, non_null(:account_result) do
       arg :id, non_null(:id)
 
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.get_account/3)
     end # end of get user
 
     @desc "Get my account returns the currently logged in user's account"
     field :get_my_account, non_null(:account_result) do
+
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.my_account/3)
     end# end of get_my_account
   end # end of the account queries
@@ -140,38 +147,46 @@ defmodule WynixWeb.Schema.Types.Accounts do
 
     @desc "Update Location updates the location of an account and returns the account"
     field :update_location, non_null(:account_result) do
-      arg :id ,non_null(:id)
       arg :input, non_null(:location_input)
 
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_location/3)
     end # end of the location field
 
     @desc "Update Banking updates the banking information of an account and returns the account"
     field :update_banking, non_null(:account_result) do
-      arg :account_id, non_null(:id)
       arg :input, non_null(:banking_input)
 
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_banking/3)
     end
 
     @desc "Update paypal updates the paypal account information for a user and returns the account"
     field :update_paypal, non_null(:account_result) do
-      arg :input, non_null(:string)
+      arg :paypal, non_null(:string)
 
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_paypal/3)
     end # end of update_paypal
 
     @desc "Update payoneer updates the payoneer account information for a user and returns the account"
     field :update_payoneer, non_null(:account_result) do
-      arg :input, non_null(:string)
+      arg :payoneer, non_null(:string)
 
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_payoneer/3)
     end # end of update_paypal
 
     @desc "Update mpesa updates the mpesa account information for a user and returns the account"
     field :update_mpesa, non_null(:account_result) do
-      arg :input, non_null(:string)
+      arg :mpesa, non_null(:string)
 
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_mpesa/3)
     end # end of update_paypal
 
@@ -179,6 +194,8 @@ defmodule WynixWeb.Schema.Types.Accounts do
     field :update_auth_email, non_null(:account_result) do
       arg :input, non_null(:email_auth_input)
 
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_user_auth_email/3)
     end # end of update_auth_email
 
@@ -186,6 +203,8 @@ defmodule WynixWeb.Schema.Types.Accounts do
     field :update_auth_password, non_null(:account_result) do
       arg :input, non_null(:password_auth_input)
 
+      # ensure that the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_user_auth_password/3)
     end # end of update_auth_password
 

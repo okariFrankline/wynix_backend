@@ -4,13 +4,14 @@ defmodule WynixWeb.Schema.Accounts.Resolver do
   """
   alias Wynix
   alias Wynix.{Accounts, Repo}
+  alias WynixWeb.Authentication.Auth
 
   @doc false
   def get_account(_parent, args, _resolution) do
     # return the account
     account = Accounts.get_account!(args.id)
     # return the the account
-    {:ok, account}
+    {:ok, %{account: account}}
   rescue
     Ecto.NoResultsError ->
       # ERRORS
@@ -25,12 +26,12 @@ defmodule WynixWeb.Schema.Accounts.Resolver do
   end # end of get_account/3
 
   @doc false
-  def my_account(_parent, _args, %{context: %{current_account: account}}), do: account
+  def my_account(_parent, _args, %{context: %{current_account: account}}), do: {:ok, %{account: account}}
 
   @doc false
   def create_practise_account(_parent, %{input: account_input}, _resolution) do
     # create the account
-    with {:ok, account} = result <- Wynix.create_user(:practise, account_input) do
+    with {:ok, account} <- Wynix.create_user(:practise, account_input) do
       {:ok, %{account: account}}
     end # end of account result
   end # end of create_account/3
@@ -38,43 +39,43 @@ defmodule WynixWeb.Schema.Accounts.Resolver do
    @doc false
   def create_client_account(_parent, %{input: account_input}, _resolution) do
     # create the account
-    with {:ok, account} = result <- Wynix.create_user(:client, account_input) do
+    with {:ok, account} <- Wynix.create_user(:client, account_input) do
       {:ok, %{account: account}}
     end # end of account result
   end # end of create_account/3
 
   @doc false
   def update_banking(_parent, %{input: banking_input}, %{context: %{current_account: account}}) do
-    with {:ok, _account} = result <- Accounts.update_account_banking(account, banking_input) do
-      result
+    with {:ok, account} <- Accounts.update_account_banking(account, banking_input) do
+      {:ok, %{account: account}}
     end # end of with
   end # end of update_banking information
 
   @doc false
   def update_location(_parent, %{input: location_input}, %{context: %{current_account: account}}) do
-    with {:ok, _account} = result <- Accounts.update_account_location(account, location_input) do
-      result
+    with {:ok, account} <- Accounts.update_account_location(account, location_input) do
+      {:ok, %{account: account}}
     end # end of with
   end # end of the update_location/3
 
   @doc false
   def update_paypal(_parent, args, %{context: %{current_account: account}}) do
-    with {:ok, _account} = result <- Accounts.update_account_paypal(account, %{paypal: args.paypal}) do
-      result
+    with {:ok, account} <- Accounts.update_account_paypal(account, %{paypal: args.paypal}) do
+      {:ok, %{account: account}}
     end # end of with
   end # end of update_paypal
 
   @doc false
   def update_payoneer(_parent, args, %{context: %{current_account: account}}) do
-    with {:ok, _account} = result <- Accounts.update_account_payoneer(account, %{payoneer: args.payoneer}) do
-      result
+    with {:ok, account} <- Accounts.update_account_payoneer(account, %{payoneer: args.payoneer}) do
+      {:ok, %{account: account}}
     end # end of with
   end # end of update_payoneer/3
 
   @doc false
   def update_mpesa(_parent, args, %{context: %{current_account: account}}) do
-    with {:ok, _account} = result <- Accounts.update_account_mpesa(account, %{mpesa: args.mpesa}) do
-      result
+    with {:ok, account} <- Accounts.update_account_mpesa(account, %{mpesa_number: args.mpesa}) do
+      {:ok, %{account: account}}
     end # end of with
   end # end of update_mpesa
 
@@ -97,7 +98,7 @@ defmodule WynixWeb.Schema.Accounts.Resolver do
       # update the account
       |> Repo.update!()
       # return the account
-      {:ok, account}
+      {:ok, %{account: account}}
     end # end of with
   end # end of update_auth_email/3
 
@@ -106,19 +107,19 @@ defmodule WynixWeb.Schema.Accounts.Resolver do
     # preload the user
     user = Repo.preload(account, :user)
     # update the password
-    with {:ok, user} <- Accounts.update_user_auth_password(user, auth_password_input) do
-      {:ok, account}
+    with {:ok, _user} <- Accounts.update_user_auth_password(user, auth_password_input) do
+      {:ok, %{account: account}}
     end # end of with
   end # end of update_auth_password/3
 
   @doc false
-  def create_session(_parent, %{auth_email: email, password: password}, _resolution) do
+  def create_session(_parent, %{input: %{auth_email: email, password: password}}, _resolution) do
     # get the user with the given email
-    user = Repo.get_by!(Accounts.User, email: email)
+    user = Repo.get_by!(Accounts.User, auth_email: email)
     # authenticate the user
     with {:ok, user} <- Auth.authenticate(user, password), {:ok, token} <- Auth.create_token(user) do
       # return the token
-      {:ok, token}
+      {:ok, %{token: token}}
     else
       {:error, _} ->
         errors = [%{

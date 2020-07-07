@@ -11,6 +11,15 @@ defmodule Wynix.Accounts.Account do
 
   @mpesa_countries ["Kenya", "Tanzania", "Uganda", "Rwanda", "South Sudan", "Mozambique", "Ghana", "Egypt"]
 
+  @country_codes %{
+    "Kenya" => "KE",
+    "Tanzania" => "TZ",
+    "Uganda" => "UG",
+    "Rwanda" => "RW",
+    "Burundi" => "BI",
+    "South Sudam" => "SS"
+  }
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "accounts" do
@@ -74,7 +83,10 @@ defmodule Wynix.Accounts.Account do
       :account_code,
       :account_number,
       :bank_branch,
-      :bank_name
+      :bank_name,
+      :city,
+      :country,
+      :physical_address
     ])
   end
 
@@ -101,6 +113,10 @@ defmodule Wynix.Accounts.Account do
       :bank_name,
       :bank_branch,
       :account_number
+    ])
+    # ensure the account number is unique
+    |> unique_constraint(:account_number, [
+      message: "The account number: #{attrs["account_number"]} is already in use."
     ])
   end # end of the banking changeset
 
@@ -256,13 +272,13 @@ defmodule Wynix.Accounts.Account do
     # check to ensure the country is in mpesa_countries
     if country in @mpesa_countries do
       # validate the number for the country given by the user
-      case Validations.validate_phone_format(number, country) do
+      case Validations.validate_phone_format(number, Map.fetch!(@country_codes, country)) do
         # the phone number is valid
         {:ok, phone_number} ->
           # put the number to the changeset
           changeset |> put_change(:mpesa_number, phone_number)
         # phone number is invalid for the given country
-        {:error, :invalid} ->
+        {:error, :not_valid} ->
           # add error indicating invalid format
           changeset |> add_error(:mpesa_number, "Failed! The phone number #{number} is invalid for the country #{country}")
       end # end of case for validation the phone number

@@ -50,9 +50,11 @@ defmodule WynixWeb.Plugs.UserContext do
       # the user exist
       %Session{} = session ->
         # get the account
-        account = session |> Repo.preload([:user]) |> Repo.preload([:account])
+        session_with_user = session |> Repo.preload([:user])
+        # preload the account
+        user = session_with_user.user |> Repo.preload([:account])
         # return the account
-        {:ok, account}
+        {:ok, user.account}
     end # end of cond
   end # end of the authorize function
 

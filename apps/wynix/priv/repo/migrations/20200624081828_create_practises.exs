@@ -17,6 +17,7 @@ defmodule Wynix.Repo.Migrations.CreatePractises do
       add :professional_level, :string, null: true, default: "Amateur"
 
       add :account_id, references(:accounts, on_delete: :delete_all, type: :binary_id)
+      add :order_id, references(:orders, on_delete: :nothing, type: :binary_id)
 
       timestamps()
     end
@@ -27,6 +28,7 @@ defmodule Wynix.Repo.Migrations.CreatePractises do
     create index(:practises, [:account_id])
     create index(:practises, [:professional_level])
     create index(:practises, [:rank])
+    create index(:practises, [:order_id])
   end
 
 end # end of the module definition

@@ -17,14 +17,12 @@ defmodule Wynix.Repo.Migrations.CreateOrders do
       add :contractors_needed, :integer, default: 1
       add :status, :string, default: "Unpublished"
 
-      add :practise_id, references(:practises, on_delete: :nothing, type: :binary_id)
       add :account_id, references(:accounts, on_delete: :nothing, type: :binary_id)
 
       timestamps()
     end
 
     create unique_index(:orders, [:order_code])
-    create index(:orders, [:practise_id])
     create index(:orders, [:account_id])
     create index(:orders, [:bid_deadline])
     create index(:orders, [:order_category])

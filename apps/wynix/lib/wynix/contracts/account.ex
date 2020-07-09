@@ -10,7 +10,9 @@ defmodule Wynix.Contracts.Account do
     field :owner_name, :string
     # has many orders
     has_many :orders, Wynix.Contracts.Order
-    
   end # end of accounts schema
+
+  @doc false
+  def new(id) when is_binary(id), do: %__MODULE__{id: id}
 
 end # end of Contracts.Account

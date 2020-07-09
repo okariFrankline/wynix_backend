@@ -3,6 +3,8 @@ defmodule WynixWeb.Schema.Types.Orders do
     Defines graphql schema types for the orders
   """
   use Absinthe.Schema.Notation
+  # alias the isLoggedin middleware
+  alias WynixWeb.Schema.Middlewares.IsLoggedIn
   alias WynixWeb.Schema.Orders.Resolver
 
   # order
@@ -21,6 +23,8 @@ defmodule WynixWeb.Schema.Types.Orders do
     field :proposal_required, :boolean
     field :status, :string
     field :practise, list_of(:order_practise)
+    # the bids made for this order
+    field :bids, list_of(:order_bid)
   end # end of order
 
   object :order_practise do
@@ -31,8 +35,8 @@ defmodule WynixWeb.Schema.Types.Orders do
   # bid object
   object :order_bid do
     field :id, non_null(:id)
-    field :asking_amount, non_null(:decimal)
-    field :deposit_amount, :decimal
+    field :asking_amount, non_null(:float)
+    field :deposit_amount, :float
     field :practise_id, non_null(:id)
     field :owner_name, non_null(:string)
   end # end of bid object
@@ -48,13 +52,13 @@ defmodule WynixWeb.Schema.Types.Orders do
     field :proposal_required, non_null(:boolean)
     field :contractors_needed, non_null(:integer)
     field :order_length, non_null(:string)
-    field :bid_deadline, non_null(:date)
+    field :bid_deadline, non_null(:string)
   end # end of the order_details_input
 
   # order payment info
   input_object :order_payment_input do
     field :payment_at, non_null(:string)
-    field :payable_amount, non_null(:decimal)
+    field :payable_amount, non_null(:string)
     field :currency, non_null(:string)
   end # end of order payment
 
@@ -82,13 +86,17 @@ defmodule WynixWeb.Schema.Types.Orders do
     field :get_order, non_null(:order_result) do
       arg :order_id, non_null(:id)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.get_order/3)
     end # end of get_order
 
     @desc "Get Order bids returns the bids for a given order"
-    field :get_order_bids, non_null(list_of(:order_bid)) do
+    field :get_order_bids, non_null(:order_result) do
       arg :order_id, non_null(:id)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.get_order_bids/3)
     end # end of get_order_bids
 
@@ -106,6 +114,8 @@ defmodule WynixWeb.Schema.Types.Orders do
     field :create_order, non_null(:order_result) do
       arg :input, non_null(:order_input)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.create_order/3)
     end # end of create order
 
@@ -114,7 +124,9 @@ defmodule WynixWeb.Schema.Types.Orders do
       arg :order_id, non_null(:id)
       arg :input, non_null(:order_input)
 
-      resolve(&Resolver.update_order/3)
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
+      resolve(&Resolver.update_order_service/3)
     end # end of update order
 
     @desc "Update order details updates the details of an order and returns the order"
@@ -122,6 +134,8 @@ defmodule WynixWeb.Schema.Types.Orders do
       arg :order_id, non_null(:id)
       arg :input, non_null(:order_details_input)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_order_details/3)
     end # end of update_order_details
 
@@ -130,6 +144,8 @@ defmodule WynixWeb.Schema.Types.Orders do
       arg :order_id, non_null(:id)
       arg :input, non_null(:order_payment_input)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_order_payment/3)
     end # end of update order payment
 
@@ -138,28 +154,37 @@ defmodule WynixWeb.Schema.Types.Orders do
       arg :order_id, non_null(:id)
       arg :description, non_null(:string)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.update_order_description/3)
     end # end of update order description
 
-    @desc "Delete order deletes an order and returns a confirmation message"
-    field :delete_order, non_null(:delete_result) do
-      arg :order_id, non_null(:id)
+    # @desc "Delete order deletes an order and returns a confirmation message"
+    # field :delete_order, non_null(:delete_result) do
+    #   arg :order_id, non_null(:id)
 
-      resolve(&Resolver.delete_order/3)
-    end # end of delete order
+    #   # ensure the user is logged in
+    #   middleware(IsLoggedIn)
+    #   resolve(&Resolver.delete_order/3)
+    # end # end of delete order
 
     @desc "Cancel order cancels and order and returns the cancelled order"
     field :cancel_order, non_null(:order_result) do
       arg :order_id, non_null(:string)
+
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
+      resolve(&Resolver.cancel_order/3)
     end # end of cancel order
 
     @desc "Accept bid accepts the bid for a given order"
     field :accept_bid, non_null(:order_result) do
       arg :bid_id, non_null(:id)
 
+      # ensure the user is logged in
+      middleware(IsLoggedIn)
       resolve(&Resolver.accept_bid/3)
     end # end of the accept_bid
-
   end # end of the orders_mutations
 
 end # end of the orders type module

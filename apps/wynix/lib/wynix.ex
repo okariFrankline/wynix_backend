@@ -87,11 +87,11 @@ defmodule Wynix do
   """
   def create_order(%Accounts.Account{id: id, account_holder: holder} = _owner_account, order_attrs) when is_map(order_attrs) do
     # add the order owner to the bid_attrs
-    order_attrs = Map.put_new(order_attrs, "order_owner", holder)
+    order_attrs = Map.put_new(order_attrs, :order_owner, holder)
     # create the order
-    with {:ok, _order} = changeset <- %Contracts.Account{id: id} |> Ecto.build_assoc(:orders) |> Contracts.create_order(order_attrs) do
+    with {:ok, _order} = result <- Contracts.Account.new(id) |> Ecto.build_assoc(:orders) |> Contracts.create_order(order_attrs) do
       # return the order
-      changeset
+      result
     else
       {:error, _changeset} = changeset -> changeset
     end # end of creating an order
@@ -214,6 +214,14 @@ defmodule Wynix do
         # send a notification to the owner of the bid
         #send_bid_owner_notification(bid.practise_id, :accepted)
       end)
+      # preload the bid that was accepted
+      order = Repo.preload(order, [
+          bids: from(
+            bid in Bid,
+            where: bid.id == ^bid_id
+          )
+        ]
+      )
       # return the result
       {:ok, order}
     end # end of with for assigning the contract
@@ -224,33 +232,37 @@ defmodule Wynix do
   """
   def cancel_order(order_id) do
     # get the order with given id from the db and preload all the bids
-    order = Contracts.get_order!(order_id) |> Repo.preload([:bids])
+    order = Contracts.get_order!(order_id) |> Repo.preload([:bids, :practises])
+    IO.inspect(order)
     # check if the order has any practise assigned to it
-    if order.practise_id do
+    if order.practises != [] do
       {:error, :already_assigned}
     else
       # cancel the order
       with {:ok, _order} = result <- Ecto.Changeset.change(order, %{status: "Cancelled"}) |> Repo.update() do
-        # start a task process for rejecting all the bids made for this order
-        Task.start(fn ->
-          with bids when bids != [] <- order.bids do
-            # for each of the bids, reject then
-            Stream.each(bids, fn bid ->
-              # start a task for rejecting the bid
+        if order.bids != [] do
+          Task.start(fn ->
+            Stream.each(order.bids, fn bid ->
+              # for each of the bids start a task for rejecting the bid
               Task.start(fn ->
-                with {:ok, _bid} <- bid |> Ecto.Changeset.change(%{status: "Rejected"}) |> Repo.update() do
-                  # send the owner of the bid a notification
-                  #send_bid_owner_notification(bid.practise_id, :order_cancelled)
+                with _order <- bid |> Ecto.Changeset.change(%{status: "Rejected"}) |> Repo.update!() do
                   :ok
-                end # end of rejecting the bid
-              end) # end of task for rejecting a single bid
-            end)
-          end # end with for checking if the order has bids
-        end) # end of tak for running the stream for each of the bids
+                end # end of with
+              end) # end of task for a single bid
+            end) # end of the stream
+            |> Stream.run()
+          end) # end of task for rejecting the bids
+        end # end of if for checking the order is has any bids
+
         # return the order
         result
       end # end of with for cancelling the order
     end # end of checking if the order has being assigned
+
+  # the order has not being found
+  rescue
+    Ecto.NoResultsError ->
+      {:error, :not_found}
   end # end of cancel_order/1
 
   @doc """
@@ -265,10 +277,18 @@ defmodule Wynix do
       )
     ])
     # return the bids
-    order.bids
+    case order.bids do
+      [] ->
+        # return the ok
+        {:error, :no_bids}
+
+      # has ids
+      _ ->
+        {:ok, order}
+    end # end of the checking the value of the bids
   rescue
     Ecto.NoResultsError ->
-      {:error, :not_found}
+      {:error, :order_not_found}
   end # end of get_bids_for_order/1
 
 

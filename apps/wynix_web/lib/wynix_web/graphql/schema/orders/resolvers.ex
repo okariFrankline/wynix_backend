@@ -99,35 +99,6 @@ defmodule WynixWeb.Schema.Orders.Resolver do
   end # end of update_order_payment/3
 
   @doc false
-  def delete_order(_parent, args, _resolution) do
-
-    case Wynix.delete_order(args.order_id) do
-      # successful deletion
-      :ok ->
-        {:ok, %{message: "Order succesfully deleted."}}
-
-      # the order has been assigned
-      {:error, :assigned} ->
-        errors = [%{
-          key: "Deletion Failed",
-          message: "Failed. Order has already being assigned."
-        }]
-        # return response
-        {:ok, %{errors: errors}}
-
-      # the order has not been found
-        {:error, :not_found} ->
-        errors = [%{
-          key: "order",
-          message: "Failed. Order not found."
-        }]
-        # return response
-        {:ok, %{errors: errors}}
-
-    end # end of case for deleting order
-  end # end of delete_order/3
-
-  @doc false
   def cancel_order(_parent, args, _resolution) do
     case Wynix.cancel_order(args.order_id) do
       # order successfully cancelled

@@ -159,15 +159,6 @@ defmodule WynixWeb.Schema.Types.Orders do
       resolve(&Resolver.update_order_description/3)
     end # end of update order description
 
-    # @desc "Delete order deletes an order and returns a confirmation message"
-    # field :delete_order, non_null(:delete_result) do
-    #   arg :order_id, non_null(:id)
-
-    #   # ensure the user is logged in
-    #   middleware(IsLoggedIn)
-    #   resolve(&Resolver.delete_order/3)
-    # end # end of delete order
-
     @desc "Cancel order cancels and order and returns the cancelled order"
     field :cancel_order, non_null(:order_result) do
       arg :order_id, non_null(:string)
